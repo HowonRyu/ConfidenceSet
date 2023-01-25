@@ -105,14 +105,17 @@ def fdrBH(pvalues, alpha=0.05):
 
   if np.where(BH_vector)[0].size == 0:
     nrejections = 0
+    rejection_locs = np.sort(sort_index[0:nrejections])  # flattened
+    rejection_ind = np.full(np.prod(pvals_dim), 0).reshape(pvals_dim)
+
   else:
     nrejections = np.where(BH_vector)[-1][-1] + 1
+    rejection_locs = np.sort(sort_index[0:nrejections])  # flattened
+    rejection_ind = np.full(np.prod(pvals_dim), 0)
+    rejection_ind[rejection_locs] = 1
+    rejection_ind = rejection_ind.reshape(pvals_dim)
 
-  
-  rejection_locs = np.sort(sort_index[0:nrejections]) #flattened
-  rejection_ind = np.full(np.prod(pvals_dim), 0)
-  rejection_ind[rejection_locs] = 1
-  rejection_ind = rejection_ind.reshape(pvals_dim)
+
 
 
   
