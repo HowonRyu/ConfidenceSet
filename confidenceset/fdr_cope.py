@@ -44,7 +44,7 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
   if tail == "two":
     pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1))
 
-    rejection_ind, _, _ = fdrBH(pvals, alpha)
+    rejection_ind, _, n_rej = fdrBH(pvals, alpha)
     outer_set = 1- Achat_C*rejection_ind
     inner_set = Achat*rejection_ind
 
@@ -52,12 +52,12 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
     inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
     outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
 
-    inner_rejection_ind, _, _ = fdrBH(inner_pvals, alpha)
-    outer_rejection_ind, _, _ = fdrBH(outer_pvals, alpha)
+    inner_rejection_ind, _, n_rej1 = fdrBH(inner_pvals, alpha)
+    outer_rejection_ind, _, n_rej2 = fdrBH(outer_pvals, alpha)
     outer_set = 1- Achat_C*outer_rejection_ind
     inner_set = Achat*inner_rejection_ind
 
-  return(outer_set, inner_set, Achat, outer_set + inner_set + Achat)
+  return(outer_set, inner_set, Achat, outer_set + inner_set + Achat, n_rej)
 
 
 
@@ -105,7 +105,7 @@ def fdrBH(pvalues, alpha=0.05):
 
   if np.where(BH_vector)[0].size == 0:
     nrejections = 0
-    rejection_locs = None  # flattened
+    rejection_locs = None  # flattened or None
     rejection_ind = np.full(np.prod(pvals_dim), 0).reshape(pvals_dim)
 
   else:
