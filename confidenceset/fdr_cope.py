@@ -40,11 +40,12 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
   nsubj = data_dim[0]
   Achat = data_tstat >= 0
   Achat_C = data_tstat < 0
+  n_rej = []
 
   if tail == "two":
     pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1))
 
-    rejection_ind, _, n_rej = fdrBH(pvals, alpha)
+    rejection_ind, _, n_rej[0] = fdrBH(pvals, alpha)
     outer_set = 1- Achat_C*rejection_ind
     inner_set = Achat*rejection_ind
 
@@ -52,8 +53,8 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
     inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
     outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
 
-    inner_rejection_ind, _, n_rej1 = fdrBH(inner_pvals, alpha)
-    outer_rejection_ind, _, n_rej2 = fdrBH(outer_pvals, alpha)
+    inner_rejection_ind, _, n_rej[0] = fdrBH(inner_pvals, alpha)
+    outer_rejection_ind, _, n_rej2[1] = fdrBH(outer_pvals, alpha)
     outer_set = 1- Achat_C*outer_rejection_ind
     inner_set = Achat*inner_rejection_ind
 
