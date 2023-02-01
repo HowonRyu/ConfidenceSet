@@ -54,7 +54,7 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
     outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
 
     inner_rejection_ind, _, n_rej[0] = fdrBH(inner_pvals, alpha)
-    outer_rejection_ind, _, n_rej2[1] = fdrBH(outer_pvals, alpha)
+    outer_rejection_ind, _, n_rej[1] = fdrBH(outer_pvals, alpha)
     outer_set = 1- Achat_C*outer_rejection_ind
     inner_set = Achat*inner_rejection_ind
 
