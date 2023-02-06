@@ -1,3 +1,6 @@
+import numpy as np
+import scipy.stats
+
 def fdr_error_check(n_subj, img_dim, c, noise_set, mu_set,
                     var=1, alpha=0.05, tail="two"):
     data_dim = np.array((n_subj,) + img_dim)
