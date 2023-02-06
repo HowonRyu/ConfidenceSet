@@ -46,3 +46,8 @@ def conf_plot_agg(c, _min=0, _max=3):
   im = axs[1, 3].imshow(conf_plot(mu_spec_circle_s_100, noise_spec_homogen_smth, field_dim=(80,100,100),
           threshold=c, alpha=0.05), vmin=_min, vmax=_max)
   axs[1, 3].set_title("small circle (100*100, smoothed noise)")
+
+  cbar_ax = fig.add_axes([0.95, 0.35, 0.015, 0.5])
+  fig.colorbar(im, cax=cbar_ax)
+
+  plt.show()
