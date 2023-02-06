@@ -40,6 +40,7 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
   nsubj = data_dim[0]
   Achat = data_tstat >= 0
   Achat_C = data_tstat < 0
+  n_rej = 0
 
   if tail == "two":
     pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1))
