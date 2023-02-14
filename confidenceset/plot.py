@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def conf_plot(mu_set, noise_set, field_dim, threshold, alpha=0.05):
   noise = get_noise(noise_set, np.array(field_dim))
