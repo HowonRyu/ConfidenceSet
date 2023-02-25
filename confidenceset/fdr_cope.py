@@ -1,8 +1,10 @@
 import numpy as np
 import scipy.stats
 
-def fdr_cope(data, threshold, alpha=0.05, tail="two"):
-  """ 
+
+def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
+             k=2, alpha0=0.05/4, alpha1=0.05/2):
+  """
   sub-setting the confidence set controlling for FDR
 
   Parameters
@@ -12,22 +14,33 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
   threshold : int
     threshold to be used for sub-setting
   alpha : int
-    significance level
-    
+    alpha level
+
 
   Returns
   -------
-  lower_set : Boolean
-    voxels denoting the lower confidence set
-  upper_set : Boolean
-    voxels denoting the upper confidence set
-
+  lower_set : array(Boolean)
+    voxels in the lower confidence set
+  upper_set : array(Boolean)
+    voxels in the upper confidence set
+  Achat : Boolean
+    voxels in the Ac_hat area
+  plot_add : array(int)
+    area representing lower_set + upper_set + Achat
+  n_rej : int or list
+    number of voxels rejected by the procedure
 
   Example
   -------
   nsub = 50
   data = numpy.random.randn(nsub, 100, 100) + 2
-  lower, upper = fdr_cope(data, threshold=2, alpha=0.05, tail="two)
+  lower, upper = fdr_cope(data, threshold=2, method="BH", alpha=0.05, tail="two)
+  plt.imshow(lower)
+  plt.imshow(upper)
+
+  nsub = 50
+  data = numpy.random.randn(nsub, 100, 100) + 2
+  lower, upper = fdr_cope(data, threshold=2, method="AD", alpha0=0.05/4, alpha1 = 0.05/2, k=2 tail="two")
   plt.imshow(lower)
   plt.imshow(upper)
 
@@ -43,22 +56,29 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
   n_rej = 0
 
   if tail == "two":
-    pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1))
-
-    rejection_ind, _, n_rej = fdrBH(pvals, alpha)
-    outer_set = 1- Achat_C*rejection_ind
-    inner_set = Achat*rejection_ind
+    pvals = 2 * (1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1))
+    if method == "adaptive":
+      rejection_ind, _, n_rej = fdr_adaptive(pvals, k=k, alpha0=alpha0, alpha1=alpha1)
+    if method == "BH":
+      rejection_ind, _, n_rej = fdrBH(pvals, alpha)
+    outer_set = 1 - Achat_C * rejection_ind
+    inner_set = Achat * rejection_ind
 
   if tail == "one":
     inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
     outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
+    if method == "adaptive":
+      inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
+      outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
+    if method == "BH":
+      inner_rejection_ind, _, inner_n_rej = fdrBH(inner_pvals, alpha)
+      outer_rejection_ind, _, outer_n_rej = fdrBH(outer_pvals, alpha)
+    n_rej = [inner_n_rej, outer_n_rej]
+    outer_set = 1 - Achat_C * outer_rejection_ind
+    inner_set = Achat * inner_rejection_ind
 
-    inner_rejection_ind, _, n_rej = fdrBH(inner_pvals, alpha)
-    outer_rejection_ind, _, n_rej = fdrBH(outer_pvals, alpha)
-    outer_set = 1- Achat_C*outer_rejection_ind
-    inner_set = Achat*inner_rejection_ind
-
-  return(outer_set, inner_set, Achat, outer_set + inner_set + Achat, n_rej)
+  plot_add = outer_set + inner_set + Achat
+  return(outer_set, inner_set, Achat, plot_add, n_rej)
 
 
 
