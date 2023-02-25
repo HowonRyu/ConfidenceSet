@@ -1,6 +1,6 @@
 import numpy as np
 
-def fdr_error_check(n_subj, img_dim, c, noise_set, mu_set,
+def fwe_inclusion_check(n_subj, img_dim, c, noise_set, mu_set,
                     var=1, alpha=0.05, tail="two"):
     data_dim = np.array((n_subj,) + img_dim)
     noise = get_noise(noise_set, data_dim) * var
@@ -17,7 +17,7 @@ def fdr_error_check(n_subj, img_dim, c, noise_set, mu_set,
     return (exclusion)
 
 
-def fdr_error_check2(n_subj, img_dim, c, noise_set, mu_set,
+def fdr_error_check(n_subj, img_dim, c, noise_set, mu_set,
                      var=1, alpha=0.05, tail="two"):
     data_dim = np.array((n_subj,) + img_dim)
     noise = get_noise(noise_set, data_dim) * var

@@ -63,65 +63,6 @@ def fdr_cope(data, threshold, alpha=0.05, tail="two"):
 
 
 
-def fdrBH(pvalues, alpha=0.05):
-  """ 
-  running the Benjamini-Hochberg procedure for false discovery rate control
-
-  Parameters
-  ----------
-  pvalues : int
-    an array or list of p-values
-  alpha : int
-    significance level
-
-  Returns
-  -------
-  rejection_ind : Boolean
-    shows whether or not the voxel is rejected
-  rejection_locs : int
-    locations of the voxels that are rejected (flattened)
-  nrejections : int
-    number of voxels rejected
-
-  Examples
-  --------
-  BHpvals = fdrBH([0.052, 0.02, 0.034, 0.05], alpha=0.05)
-
-  data = numpy.random.randn(100,50,50)
-  data_tstat = mvtstat(data - threshold)
-  data_dim = data.shape
-  nsubj = data_dim[0]
-  pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1));
-  rejection_ind, _, _ = fdrBH(pvals, alpha)
-  """
-
-  pvals_dim = pvalues.shape
-  pvalues_flat = pvalues.flatten()
-  sorted_pvalues = np.sort(pvalues_flat)
-  sort_index = np.argsort(pvalues_flat)
-
-  npvals = len(pvalues_flat)
-  BH_upper = ((np.arange(npvals)+1)/npvals)*alpha #critical values from BH
-  BH_vector = sorted_pvalues <= BH_upper
-
-  if np.where(BH_vector)[0].size == 0:
-    nrejections = 0
-    rejection_locs = None  # flattened or None
-    rejection_ind = np.full(np.prod(pvals_dim), 0).reshape(pvals_dim)
-
-  else:
-    nrejections = np.where(BH_vector)[-1][-1] + 1
-    rejection_locs = np.sort(sort_index[0:nrejections])  # flattened
-    rejection_ind = np.full(np.prod(pvals_dim), 0)
-    rejection_ind[rejection_locs] = 1
-    rejection_ind = rejection_ind.reshape(pvals_dim)
-
-
-
-
-  
-  return(rejection_ind, rejection_locs, nrejections)
-
 
 
 
@@ -159,3 +100,163 @@ def mvtstat(data):
 
   return(tstat)
 
+
+def fdr_adaptive(pvalues, k, alpha0=0.05 / 4, alpha1=0.05 / 2):
+  """
+  the two-stage adaptive step-up procedure to control for false discovery rate
+
+  Parameters
+  ----------
+  pvalues : int
+    an array or list of p-values
+  k : int
+    parameter for the F_kap function
+  alpha0 : int
+    [0, 1] alpha level for the first stage
+  alpha1 : int
+    [0, 1] alpha level for the second stage
+
+  Returns
+  -------
+  rejection_ind : Boolean
+    shows whether or not the voxel is rejected
+  rejection_locs : int
+    locations of the voxels that are rejected (flattened)
+  nrejections : int
+    number of voxels rejected
+
+  Examples
+  --------
+  data = numpy.random.randn(100,50,50)
+  data_tstat = mvtstat(data - threshold)
+  data_dim = data.shape
+  nsubj = data_dim[0]
+  pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1));
+  rejection_ind, _, _ = fdr_adaptive(pvals, k=2, alpha0=0.05/4, alpha1=0.05/2)
+
+  :Authors:
+    Samuel Davenport <sdavenport@health.ucsd.edu>
+    Howon Ryu <howonryu@ucsd.edu>
+  """
+  pvalues = np.array(pvalues)
+  first_rejection_ind, first_rejection_locs, R0 = fdrBH(pvalues, alpha=alpha0)
+  pvals_dim = pvalues.shape
+  pvalues_flat = pvalues.flatten()
+  sorted_pvalues = np.sort(pvalues_flat)
+  sort_index = np.argsort(pvalues_flat)
+
+  m = len(pvalues_flat)
+  delta_thres = (((np.arange(m) + 1) * F_kap(x=(R0 / m), k=k)) / m) * alpha1  # threshold collection
+  rejection = sorted_pvalues <= delta_thres
+
+  if np.where(rejection)[0].size == 0:
+    nrejections = 0
+    rejection_locs = None  # flattened or None
+    rejection_ind = np.full(np.prod(pvals_dim), 0).reshape(pvals_dim)
+
+  else:
+    nrejections = np.where(rejection)[-1][-1] + 1
+    rejection_locs = np.sort(sort_index[0:nrejections])  # flattened
+    rejection_ind = np.full(np.prod(pvals_dim), 0)
+    rejection_ind[rejection_locs] = 1
+    rejection_ind = rejection_ind.reshape(pvals_dim)
+  return(rejection_ind, rejection_locs, nrejections)
+
+
+def fdrBH(pvalues, alpha=0.05):
+  """
+  the Benjamini-Hochberg procedure for false discovery rate control
+
+  Parameters
+  ----------
+  pvalues : int
+    an array or list of p-values
+  alpha : int
+    [0, 1] alpha level
+
+  Returns
+  -------
+  rejection_ind : Boolean
+    shows whether or not the voxel is rejected
+  rejection_locs : int
+    locations of the voxels that are rejected (flattened)
+  nrejections : int
+    number of voxels rejected
+
+  Examples
+  --------
+  data = numpy.random.randn(100,50,50)
+  data_tstat = mvtstat(data - threshold)
+  data_dim = data.shape
+  nsubj = data_dim[0]
+  pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1));
+  rejection_ind, _, _ = fdrBH(pvals, alpha)
+
+  :Authors:
+    Samuel Davenport <sdavenport@health.ucsd.edu>
+    Howon Ryu <howonryu@ucsd.edu>
+  """
+  pvalues = np.array(pvalues)
+  pvals_dim = pvalues.shape
+  pvalues_flat = pvalues.flatten()
+  sorted_pvalues = np.sort(pvalues_flat)
+  sort_index = np.argsort(pvalues_flat)
+
+  m = len(pvalues_flat)
+  delta_thres = ((np.arange(m) + 1) / m) * alpha  # threshold collection
+  rejection = sorted_pvalues <= delta_thres
+
+  if np.where(rejection)[0].size == 0:
+    nrejections = 0
+    rejection_locs = None  # flattened or None
+    rejection_ind = np.full(np.prod(pvals_dim), 0).reshape(pvals_dim)
+
+  else:
+    nrejections = np.where(rejection)[-1][-1] + 1
+    rejection_locs = np.sort(sort_index[0:nrejections])  # flattened
+    rejection_ind = np.full(np.prod(pvals_dim), 0)
+    rejection_ind[rejection_locs] = 1
+    rejection_ind = rejection_ind.reshape(pvals_dim)
+
+  return(rejection_ind, rejection_locs, nrejections)
+
+
+def F_kap(x, k):
+  """
+  F_k function
+
+  Parameters
+  ----------
+  x : int
+    input value for the function
+  k : int
+    parameter for the function
+
+  Returns
+  -------
+  y : int
+    output value from the function
+
+  Examples
+  --------
+  pvalues = [0.005, 0.003, 0.006, 0.994, 0.002, 0.0001, 0.035]
+  _, _, R0 = fdrBH(pvalues, alpha=alpha0)
+  m = len(pvalues_flat)
+  print(F_kap(x=R0/m, k=2))
+
+  :Authors:
+    Samuel Davenport <sdavenport@health.ucsd.edu>
+    Howon Ryu <howonryu@ucsd.edu>
+  """
+  if k < 2:
+    return ("invalid k value")
+  else:
+    kinv = k ** (-1)
+    if x > 1 or x < 0:
+      return ("invalid X values")
+    else:
+      if x <= kinv:
+        y = 1
+      else:
+        y = (2 * kinv) / (1 - np.sqrt(1 - 4 * (1 - x) * kinv))
+  return(y)

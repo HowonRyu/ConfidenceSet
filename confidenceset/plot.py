@@ -6,7 +6,7 @@ def conf_plot(mu_set, noise_set, field_dim, threshold, alpha=0.05):
   mu = get_mu(mu_set, np.array(field_dim))
   data = noise + mu
   outer, inner, Achat, _, nrej = fdr_cope(data, threshold=threshold, alpha=alpha, tail="two")
-  plot = outer + inner + (mu[0,:,:]==threshold)
+  plot = outer + inner + (mu[0,:,:]>=threshold)
   return(plot)
 
 def conf_plot_agg(c, _min=0, _max=3, figsize=(30, 20)):
