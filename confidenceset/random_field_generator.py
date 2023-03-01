@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
-import matplotlib.pyplot as plt
+
 
 def ramp_2D(dim, mag, direction=0, fwhm=0, std=1, truncate=4):
   nsubj = dim[0]
@@ -10,7 +10,8 @@ def ramp_2D(dim, mag, direction=0, fwhm=0, std=1, truncate=4):
     mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2])[::-1],dim[1]).reshape(dim[1],dim[2])
   else: #horizontal
     mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2]),dim[1]).reshape(dim[2],dim[1]).transpose()
-  mu = np.tile(mu_temp, nsubj).reshape(dim)
+  mu = mu_temp
+  #mu = np.tile(mu_temp, nsubj).reshape(dim)
 
 
   # noise
@@ -24,19 +25,18 @@ def ramp_2D(dim, mag, direction=0, fwhm=0, std=1, truncate=4):
 
   return(data, mu)
 
-def circular_2D(dim, mag, r, fwhm_noise=0, fwhm_signal=3, std=1, truncate=4):
+def circular_2D(dim, mag, r=0.7, fwhm_noise=0, fwhm_signal=5, std=1, truncate=4):
   nsubj = dim[0]
-  sigma = fwhm / np.sqrt(8 * np.log(2))
+  sigma_signal = fwhm_noise / np.sqrt(8 * np.log(2))
 
   # signal
-  center = np.array([dim[1]//2, dim[2]//2])
   x, y = np.meshgrid(np.linspace(-1,1,dim[1]), np.linspace(-1,1,dim[2]))
   cx, cy = 0, 0
-  circle = (np.sqrt( (x-cx)**2 + (y-cy)**2  ) <= r)
+  circle = np.array((np.sqrt((x-cx)**2 + (y-cy)**2) <= r), dtype='float')
 
   sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
-  circle_smth = gaussian_filter(circle, sigma = sigma_signal, truncate=truncate) * mag
-  mu = np.tile(circle_smth, nsubj).reshape(dim)
+  circle_smth = gaussian_filter(circle, sigma = sigma_signal, truncate=truncate)
+  mu = circle_smth * mag
 
   # noise
   noise = np.random.randn(*dim) * std
@@ -46,5 +46,4 @@ def circular_2D(dim, mag, r, fwhm_noise=0, fwhm_signal=3, std=1, truncate=4):
     noise[i,:,:] = gaussian_filter(noise[i,:,:], sigma = sigma_noise, truncate=truncate)  #smoothing
 
   data = mu + noise
-
   return(data, mu)

@@ -55,13 +55,14 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
   Achat_C = data_tstat < 0
   n_rej = 0
 
-  rejection_ind = np.array()
+
 
   if tail == "two":
     pvals = 2 * (1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1))
+    rejection_ind = np.full(np.prod(pvals.shape), 0)
     if method == "adaptive":
       rejection_ind, _, n_rej = fdr_adaptive(pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-    else:
+    if method == "BH":
       rejection_ind, _, n_rej = fdrBH(pvals, alpha)
     outer_set = 1 - Achat_C * rejection_ind
     inner_set = Achat * rejection_ind
@@ -69,6 +70,7 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
   if tail == "one":
     inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
     outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
+    rejection_ind = np.full(np.prod(inner_pvals.shape), 0)
     if method == "adaptive":
       inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
       outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
@@ -182,7 +184,7 @@ def fdr_adaptive(pvalues, k, alpha0=0.05 / 4, alpha1=0.05 / 2):
     rejection_ind = np.full(np.prod(pvals_dim), 0)
     rejection_ind[rejection_locs] = 1
     rejection_ind = rejection_ind.reshape(pvals_dim)
-    
+
   return(rejection_ind, rejection_locs, nrejections)
 
 
