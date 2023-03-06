@@ -75,8 +75,8 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
       inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
       outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
     if method == "BH":
-      inner_rejection_ind, _, inner_n_rej = fdrBH(inner_pvals, alpha)
-      outer_rejection_ind, _, outer_n_rej = fdrBH(outer_pvals, alpha)
+      inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha)
+      outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
     n_rej = [inner_n_rej, outer_n_rej]
     outer_set = 1 - Achat_C * outer_rejection_ind
     inner_set = Achat * inner_rejection_ind
@@ -88,7 +88,62 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
 
 
 
+def fdr_BH(pvalues, alpha=0.05):
+  """
+  the Benjamini-Hochberg procedure for false discovery rate control
 
+  Parameters
+  ----------
+  pvalues : int
+    an array or list of p-values
+  alpha : int
+    [0, 1] alpha level
+
+  Returns
+  -------
+  rejection_ind : Boolean
+    shows whether or not the voxel is rejected
+  rejection_locs : int
+    locations of the voxels that are rejected (flattened)
+  nrejections : int
+    number of voxels rejected
+
+  Examples
+  --------
+  data = numpy.random.randn(100,50,50)
+  data_tstat = mvtstat(data - threshold)
+  data_dim = data.shape
+  nsubj = data_dim[0]
+  pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1));
+  rejection_ind, _, _ = fdrBH(pvals, alpha)
+
+  :Authors:
+    Samuel Davenport <sdavenport@health.ucsd.edu>
+    Howon Ryu <howonryu@ucsd.edu>
+  """
+  pvalues = np.array(pvalues)
+  pvals_dim = pvalues.shape
+  pvalues_flat = pvalues.flatten()
+  sorted_pvalues = np.sort(pvalues_flat)
+  sort_index = np.argsort(pvalues_flat)
+
+  m = len(pvalues_flat)
+  delta_thres = ((np.arange(m) + 1) / m) * alpha  # threshold collection
+  rejection = sorted_pvalues <= delta_thres
+
+  if np.where(rejection)[0].size == 0:
+    nrejections = 0
+    rejection_locs = None  # flattened or None
+    rejection_ind = np.full(np.prod(pvals_dim), 0).reshape(pvals_dim)
+
+  else:
+    nrejections = np.where(rejection)[-1][-1] + 1
+    rejection_locs = np.sort(sort_index[0:nrejections])  # flattened
+    rejection_ind = np.full(np.prod(pvals_dim), 0)
+    rejection_ind[rejection_locs] = 1
+    rejection_ind = rejection_ind.reshape(pvals_dim)
+
+  return(rejection_ind, rejection_locs, nrejections)
 
 def mvtstat(data):
   """ returns multivariate t-statistics
@@ -188,62 +243,7 @@ def fdr_adaptive(pvalues, k, alpha0=0.05 / 4, alpha1=0.05 / 2):
   return(rejection_ind, rejection_locs, nrejections)
 
 
-def fdrBH(pvalues, alpha=0.05):
-  """
-  the Benjamini-Hochberg procedure for false discovery rate control
 
-  Parameters
-  ----------
-  pvalues : int
-    an array or list of p-values
-  alpha : int
-    [0, 1] alpha level
-
-  Returns
-  -------
-  rejection_ind : Boolean
-    shows whether or not the voxel is rejected
-  rejection_locs : int
-    locations of the voxels that are rejected (flattened)
-  nrejections : int
-    number of voxels rejected
-
-  Examples
-  --------
-  data = numpy.random.randn(100,50,50)
-  data_tstat = mvtstat(data - threshold)
-  data_dim = data.shape
-  nsubj = data_dim[0]
-  pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1));
-  rejection_ind, _, _ = fdrBH(pvals, alpha)
-
-  :Authors:
-    Samuel Davenport <sdavenport@health.ucsd.edu>
-    Howon Ryu <howonryu@ucsd.edu>
-  """
-  pvalues = np.array(pvalues)
-  pvals_dim = pvalues.shape
-  pvalues_flat = pvalues.flatten()
-  sorted_pvalues = np.sort(pvalues_flat)
-  sort_index = np.argsort(pvalues_flat)
-
-  m = len(pvalues_flat)
-  delta_thres = ((np.arange(m) + 1) / m) * alpha  # threshold collection
-  rejection = sorted_pvalues <= delta_thres
-
-  if np.where(rejection)[0].size == 0:
-    nrejections = 0
-    rejection_locs = None  # flattened or None
-    rejection_ind = np.full(np.prod(pvals_dim), 0).reshape(pvals_dim)
-
-  else:
-    nrejections = np.where(rejection)[-1][-1] + 1
-    rejection_locs = np.sort(sort_index[0:nrejections])  # flattened
-    rejection_ind = np.full(np.prod(pvals_dim), 0)
-    rejection_ind[rejection_locs] = 1
-    rejection_ind = rejection_ind.reshape(pvals_dim)
-
-  return(rejection_ind, rejection_locs, nrejections)
 
 
 def F_kap(x, k):
