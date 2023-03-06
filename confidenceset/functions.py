@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.stats
-
+import matplotlib.pyplot as plt
 
 def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
              k=2, alpha0=0.05/4, alpha1=0.05/2):
