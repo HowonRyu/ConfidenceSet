@@ -423,10 +423,13 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
       fdr_error_check(dim_50, c=c[2], shape="circular", method=method, shape_spec=spec_cir_s50_smth, alpha=alpha,
                       tail=tail))
 
-  # m0/m
-  ERR['alpha*m0/m(small)'] = [np.round(0.05 * m0_small50_c0 / (dimprod_50), 6),
-                              np.round(0.05 * m0_small50_c1 / (dimprod_50), 6),
-                              np.round(0.05 * m0_small50_c2 / (dimprod_50), 6)]
+  if method == "adaptive":
+    ERR['alpha(small)'] = [0.05, 0.05, 0.05]
+  if method == "BH":
+    ERR['alpha*m0/m(small)'] = [np.round(0.05 * m0_small50_c0 / (dimprod_50), 5),
+                                np.round(0.05 * m0_small50_c1 / (dimprod_50), 5),
+                                np.round(0.05 * m0_small50_c2 / (dimprod_50), 5)]
+
 
   # large 50*50
   ERR['circle(l)'] = [[], [], []]
@@ -455,10 +458,13 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
       fdr_error_check(dim_50, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l50_smth, alpha=alpha,
                       tail=tail))
 
-  # m0/m
-  ERR['alpha*m0/m(large)'] = [np.round(0.05 * m0_large50_c0 / (dimprod_50), 6),
-                              np.round(0.05 * m0_large50_c1 / (dimprod_50), 6),
-                              np.round(0.05 * m0_large50_c2 / (dimprod_50), 6)]
+
+  if method == "adaptive":
+    ERR['alpha(large)'] = [0.05, 0.05, 0.05]
+  if method == "BH":
+    ERR['alpha*m0/m(large)'] = [np.round(0.05 * m0_large50_c0 / (dimprod_50), 5),
+                                np.round(0.05 * m0_large50_c1 / (dimprod_50), 5),
+                                np.round(0.05 * m0_large50_c2 / (dimprod_50), 5)]
 
   # ramp 50*50
   ERR['ramp'] = [[], [], []]
@@ -486,10 +492,13 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
       fdr_error_check(dim_50, c=c[2], shape="ramp", method=method, mag=3, direction=1, fwhm=3, std=std,
                       alpha=alpha, tail=tail))
 
-  # m0/m
-  ERR['alpha*m0/m(ramp)'] = [np.round(0.05 * m0_ramp_50_c0 / (50 * 50), 6),
-                             np.round(0.05 * m0_ramp_50_c1 / (50 * 50), 6),
-                             np.round(0.05 * m0_ramp_50_c2 / (50 * 50), 6)]
+  if method == "adaptive":
+    ERR['alpha(ramp)'] = [0.05, 0.05, 0.05]
+  if method == "BH":
+    ERR['alpha*m0/m(ramp)'] = [np.round(0.05 * m0_ramp_50_c0 / (dimprod_50), 5),
+                               np.round(0.05 * m0_ramp_50_c1 / (dimprod_50), 5),
+                               np.round(0.05 * m0_ramp_50_c2 / (dimprod_50), 5)]
+
 
   ERR_key_calc = [list(ERR.keys())[i] for i in [1, 2, 4, 5, 7, 8]]
   ERR.update({n: np.round(np.nanmean(ERR[n], axis=1), 4) for n in ERR_key_calc})
@@ -525,10 +534,12 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
       fdr_error_check(dim_100, c=c[2], shape="circular", method=method, shape_spec=spec_cir_s100_smth,
                       alpha=alpha, tail=tail))
 
-  # m0/m
-  ERR2['alpha*m0/m(small)'] = [np.round(0.05 * m0_small100_c0 / (dimprod_100), 6),
-                               np.round(0.05 * m0_small100_c1 / (dimprod_100), 6),
-                               np.round(0.05 * m0_small100_c2 / (dimprod_100), 6)]
+  if method == "adaptive":
+    ERR2['alpha(small)'] = [0.05, 0.05, 0.05]
+  if method == "BH":
+    ERR2['alpha*m0/m(small)'] = [np.round(0.05 * m0_small100_c0 / (dimprod_100), 5),
+                                 np.round(0.05 * m0_small100_c1 / (dimprod_100), 5),
+                                 np.round(0.05 * m0_small100_c2 / (dimprod_100), 5)]
 
   # large 100*100
   ERR2['circle(l)'] = [[], [], []]
@@ -556,10 +567,14 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
     ERR2['circle(l)smth'][2].append(
       fdr_error_check(dim_100, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l100_smth,
                       alpha=alpha, tail=tail))
-  # m0/m
-  ERR2['alpha*m0/m(large)'] = [np.round(0.05 * m0_large100_c0 / (dimprod_100), 6),
-                               np.round(0.05 * m0_large100_c1 / (dimprod_100), 6),
-                               np.round(0.05 * m0_large100_c2 / (dimprod_100), 6)]
+
+  if method == "adaptive":
+    ERR2['alpha(large)'] = [0.05, 0.05, 0.05]
+  if method == "BH":
+    ERR2['alpha*m0/m(large)'] = [np.round(0.05 * m0_large100_c0 / (dimprod_100), 5),
+                                 np.round(0.05 * m0_large100_c1 / (dimprod_100), 5),
+                                 np.round(0.05 * m0_large100_c2 / (dimprod_100), 5)]
+
 
   # ramp 100*100
   ERR2['ramp'] = [[], [], []]
@@ -587,15 +602,20 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
       fdr_error_check(dim_100, c=c[2], shape="ramp", method=method, mag=3, direction=1, fwhm=3 * 2, std=std,
                       alpha=alpha, tail=tail))
 
-  # m0/m
-  ERR2['alpha*m0/m(ramp)'] = [np.round(0.05 * m0_ramp_100_c0 / (100 * 100), 6),
-                              np.round(0.05 * m0_ramp_100_c1 / (100 * 100), 6),
-                              np.round(0.05 * m0_ramp_100_c2 / (100 * 100), 6)]
+
+  if method == "adaptive":
+    ERR2['alpha(large)'] = [0.05, 0.05, 0.05]
+  if method == "BH":
+    ERR2['alpha*m0/m(ramp)'] = [np.round(0.05 * m0_ramp_100_c0 / (100 * 100), 5),
+                                np.round(0.05 * m0_ramp_100_c1 / (100 * 100), 5),
+                                np.round(0.05 * m0_ramp_100_c2 / (100 * 100), 5)]
 
   ERR2_key_calc = [list(ERR2.keys())[i] for i in [1, 2, 4, 5, 7, 8]]
   ERR2.update({n: np.round(np.nanmean(ERR2[n], axis=1), 4) for n in ERR2_key_calc})
 
   return (ERR, ERR2)
+
+
 
 
 ### random field generator
