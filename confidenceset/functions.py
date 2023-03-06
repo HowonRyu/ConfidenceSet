@@ -68,7 +68,7 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
     if method == "adaptive":
       rejection_ind, _, n_rej = fdr_adaptive(pvals, k=k, alpha0=alpha0, alpha1=alpha1)
     if method == "BH":
-      rejection_ind, _, n_rej = fdrBH(pvals, alpha)
+      rejection_ind, _, n_rej = fdr_BH(pvals, alpha)
     outer_set = 1 - Achat_C * rejection_ind
     inner_set = Achat * rejection_ind
 
@@ -120,7 +120,7 @@ def fdr_BH(pvalues, alpha=0.05):
   data_dim = data.shape
   nsubj = data_dim[0]
   pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1));
-  rejection_ind, _, _ = fdrBH(pvals, alpha)
+  rejection_ind, _, _ = fdr_BH(pvals, alpha)
 
   :Authors:
     Samuel Davenport <sdavenport@health.ucsd.edu>
@@ -223,7 +223,7 @@ def fdr_adaptive(pvalues, k, alpha0=0.05 / 4, alpha1=0.05 / 2):
     Howon Ryu <howonryu@ucsd.edu>
   """
   pvalues = np.array(pvalues)
-  first_rejection_ind, first_rejection_locs, R0 = fdrBH(pvalues, alpha=alpha0)
+  first_rejection_ind, first_rejection_locs, R0 = fdr_BH(pvalues, alpha=alpha0)
   pvals_dim = pvalues.shape
   pvalues_flat = pvalues.flatten()
   sorted_pvalues = np.sort(pvalues_flat)
@@ -270,7 +270,7 @@ def F_kap(x, k):
   Examples
   --------
   pvalues = [0.005, 0.003, 0.006, 0.994, 0.002, 0.0001, 0.035]
-  _, _, R0 = fdrBH(pvalues, alpha=alpha0)
+  _, _, R0 = fdr_BH(pvalues, alpha=alpha0)
   m = len(pvalues_flat)
   print(F_kap(x=R0/m, k=2))
 
