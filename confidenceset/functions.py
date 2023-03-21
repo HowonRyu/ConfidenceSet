@@ -619,50 +619,15 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
 
 
 ### random field generator
-
-def ramp_2D(dim, mag, direction=0, fwhm=0, std=1, truncate=4):
-  nsubj = dim[0]
-
-  # signal
-  if direction == 0: #vertical
-    mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2])[::-1],dim[1]).reshape(dim[1],dim[2])
-  else: #horizontal
-    mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2]),dim[1]).reshape(dim[2],dim[1]).transpose()
-  mu = np.array(mu_temp, dtype='float')
-  #mu = np.tile(mu_temp, nsubj).reshape(dim)
-
-
-  # noise
-  noise = np.random.randn(*dim) * std
-  sigma = fwhm / np.sqrt(8 * np.log(2))
-
-  for i in np.arange(nsubj):
-    noise[i,:,:] = gaussian_filter(noise[i,:,:], sigma = sigma, truncate=truncate)  #smoothing
-
-  data = np.array(mu + noise, dtype='float')
-
-  return(data, mu)
-
-
-def circular_2D(dim, shape_spec, truncate=4):
-  nsubj = dim[0]
-  r = shape_spec['r']
-  mag = shape_spec['mag']
+def gen_2D(dim, shape, shape_spec, truncate=4):
   fwhm_noise = shape_spec['fwhm_noise']
-  fwhm_signal = shape_spec['fwhm_signal']
-  fwhm_signal = shape_spec['fwhm_signal']
   std = shape_spec['std']
 
-  sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
-
   # signal
-  x, y = np.meshgrid(np.linspace(-1,1,dim[1]), np.linspace(-1,1,dim[2]))
-  cx, cy = 0, 0
-  circle = np.array((np.sqrt((x-cx)**2 + (y-cy)**2) <= r), dtype='float')
-
-  sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
-  circle_smth = gaussian_filter(circle, sigma = sigma_signal, truncate=truncate)
-  mu = np.array(circle_smth * mag, dtype='float')
+  if shape == "ramp":
+    signal = ramp_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
+  if shape == "ellipse":
+    signal = ellipse_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
 
   # noise
   noise = np.random.randn(*dim) * std
@@ -672,8 +637,42 @@ def circular_2D(dim, shape_spec, truncate=4):
     noise[i,:,:] = gaussian_filter(noise[i,:,:], sigma = sigma_noise, truncate=truncate)  #smoothing
 
   data = np.array(mu + noise, dtype='float')
-  return(data, mu)
+  return(data, signal)
 
+def ramp_2D(dim, shape_spec):
+  nsubj = dim[0]
+  direction = shape_spec['direction']
+  mag = shape_spec['mag']
+  std = shape_spec['std']
+
+  # signal
+  if direction == 0: #vertical
+    mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2])[::-1],dim[1]).reshape(dim[1],dim[2])
+  else: #horizontal
+    mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2]),dim[1]).reshape(dim[2],dim[1]).transpose()
+  mu = np.array(mu_temp, dtype='float')
+  return(mu)
+
+def ellipse_2D(dim, shape_spec, truncate=4):
+  nsubj = dim[0]
+  a = shape_spec['a']
+  b = shape_spec['b']
+  mag = shape_spec['mag']
+  fwhm_signal = shape_spec['fwhm_signal']
+
+  # signal
+  x, y = np.meshgrid(np.linspace(-1,1,dim[1]), np.linspace(-1,1,dim[2]))
+  cx, cy = 0,0
+  theta = -np.pi/4
+  xx = np.cos(theta)*(x-cx) + np.sin(theta)*(y-cy)
+  yy = -np.sin(theta)*(x-cx) + np.cos(theta)*(y-cy)
+  ellipse = np.array((xx/a)**2 + (yy/b)**2 <= 1, dtype="float")
+
+  sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
+  ellipse_smth = gaussian_filter(ellipse, sigma = sigma_signal, truncate=truncate)
+  mu = np.array(ellipse_smth * mag, dtype='float')
+
+  return(mu)
 
 
 def conf_plot_agg(c, method, std = 5, tail="two", _min=0, _max=3, fontsize = 25, figsize=(30, 20)):
