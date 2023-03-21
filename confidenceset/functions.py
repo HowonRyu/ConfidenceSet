@@ -622,6 +622,7 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
 def gen_2D(dim, shape, shape_spec, truncate=4):
   fwhm_noise = shape_spec['fwhm_noise']
   std = shape_spec['std']
+  nsubj = dim[0]
 
   # signal
   if shape == "ramp":
