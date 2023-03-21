@@ -626,9 +626,9 @@ def gen_2D(dim, shape, shape_spec, truncate=4):
 
   # signal
   if shape == "ramp":
-    signal = ramp_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
+    mu = ramp_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
   if shape == "ellipse":
-    signal = ellipse_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
+    mu = ellipse_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
 
   # noise
   noise = np.random.randn(*dim) * std
@@ -638,7 +638,7 @@ def gen_2D(dim, shape, shape_spec, truncate=4):
     noise[i,:,:] = gaussian_filter(noise[i,:,:], sigma = sigma_noise, truncate=truncate)  #smoothing
 
   data = np.array(mu + noise, dtype='float')
-  return(data, signal)
+  return(data, mu)
 
 def ramp_2D(dim, shape_spec):
   nsubj = dim[0]
