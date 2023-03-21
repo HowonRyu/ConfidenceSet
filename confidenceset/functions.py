@@ -619,15 +619,15 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
 
 
 ### random field generator
-def gen_2D(dim, shape, shape_spec, truncate=4):
+def gen_2D(dim, shape, shape_spec, truncate=3):
   fwhm_noise = shape_spec['fwhm_noise']
   std = shape_spec['std']
   nsubj = dim[0]
 
   # signal
   if shape == "ramp":
-    mu = ramp_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
-  if shape == "ellipse":
+    mu = ramp_2D(dim=dim, shape_spec=shape_spec)
+  else:
     mu = ellipse_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
 
   # noise
@@ -649,7 +649,7 @@ def ramp_2D(dim, shape_spec):
   # signal
   if direction == 0: #vertical
     mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2])[::-1],dim[1]).reshape(dim[1],dim[2])
-  else: #horizontal
+  if direction == 1: #horizontal
     mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2]),dim[1]).reshape(dim[2],dim[1]).transpose()
   mu = np.array(mu_temp, dtype='float')
   return(mu)
