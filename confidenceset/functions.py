@@ -368,7 +368,7 @@ def error_check_sim(sim_num, mode, method, c, c_marg=0.2, std=5, tail="two", alp
   up0, lo0 = c[0] + c_marg, c[0] - c_marg
   up1, lo1 = c[1] + c_marg, c[1] - c_marg
   up2, lo2 = c[2] + c_marg, c[2] - c_marg
-
+  r=0.5
   mag = 3
   f50 = 10
   f100 = 10 * 2
