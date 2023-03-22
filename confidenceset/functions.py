@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
-
+import matplotlib.colors as colors
 
 
 ### procedures
@@ -311,28 +311,45 @@ def fwe_inclusion_check(n_subj, img_dim, c, noise_set, mu_set, var=1, alpha=0.05
     return (exclusion)
 
 
-def fdr_error_check(dim, c, shape, method, shape_spec=None, mag=3, direction=1, fwhm=3,
-                    std=5, alpha=0.05, tail="two"):
-  if (shape == 'noise'):
+def error_check(mode, dim, threshold, method, shape, shape_spec=None, alpha=0.05, tail="two"):
+  if shape == 'noise':
     data = np.random.randn(*dim) * std
     mu = np.zeros((dim[1], dim[2]))
 
-  if (shape == "circular"):
-    data, mu = circular_2D(dim=dim, shape_spec=shape_spec)
-  if (shape == "ramp"):
-    data, mu = ramp_2D(dim=dim, std=std, mag=(0, mag), direction=direction, fwhm=fwhm)
+  else:
+    data, mu = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec)
 
-  Ac = mu >= c
+  Ac = mu >= threshold
   AcC = 1 - Ac
-  lower, upper, Achat, all_sets, n_rej = fdr_cope(data, method=method, threshold=c, alpha=alpha, tail=tail)
+  lower, upper, Achat, all_sets, n_rej = fdr_cope(data, method=method, threshold=threshold, alpha=alpha, tail=tail)
 
-  if tail == "one":
-    numer = np.sum(np.maximum(upper - Ac.astype(int), 0))
-    denom = np.sum(upper)
+  if mode == "fdr":
+    if tail == "one":
+      numer = np.sum(np.maximum(upper - Ac.astype(int), 0))
+      denom = np.sum(upper)
 
-  if tail == "two":
-    numer = np.sum(np.minimum(np.maximum(upper - Ac.astype(int), 0) + np.maximum(Ac.astype(int) - lower, 0), 1))
-    denom = np.sum(np.minimum(upper + (1 - lower), 1))
+    if tail == "two":
+      numer = np.sum(np.minimum(np.maximum(upper - Ac.astype(int), 0) + np.maximum(Ac.astype(int) - lower, 0), 1))
+      denom = np.sum(1-np.minimum(lower - upper, 1))
+
+  if mode == "fndr":
+    if tail == "one":
+      numer = np.sum(np.maximum(Ac.astype(int) - upper, 0))
+      denom = np.sum(1-upper)
+
+    if tail == "two":
+      numer = np.sum(np.minimum(np.maximum(Ac.astype(int) - upper, 0) + np.maximum(lower - Ac.astype(int), 0), 1))
+      denom = np.sum(np.minimum(lower - upper, 1))
+
+  if mode == "type2":
+    if tail == "one":
+      numer = np.sum(np.maximum(Ac.astype(int) - upper, 0))
+      denom = np.sum(Ac.astype(int))
+
+    if tail == "two":
+      numer = np.sum(np.minimum(np.maximum(Ac.astype(int) - upper, 0) + np.maximum(lower - Ac.astype(int), 0), 1))
+      denom = np.sum(Ac.astype(int))
+
 
   if n_rej == 0:
     ERR = 0
@@ -342,8 +359,8 @@ def fdr_error_check(dim, c, shape, method, shape_spec=None, mag=3, direction=1, 
   return (ERR)
 
 
-def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha=0.05, alpha0=0.05 / 4,
-                        alpha1=0.05 / 2):
+def error_check_sim(sim_num, mode, method, c, c_marg=0.2, std=5, tail="two", alpha=0.05, alpha0=0.05 / 4,
+                    alpha1=0.05 / 2):
   dim_100 = (80, 100, 100)
   dimprod_100 = dim_100[1] * dim_100[2]
   dim_50 = (80, 50, 50)
@@ -352,145 +369,192 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
   up1, lo1 = c[1] + c_marg, c[1] - c_marg
   up2, lo2 = c[2] + c_marg, c[2] - c_marg
 
-  # ramps
-  mu_ramp_50 = ramp_2D(dim=dim_50, mag=(0, 3), direction=1, fwhm=0, std=std)[1]
-  mu_ramp_100 = ramp_2D(dim=dim_100, mag=(0, 3), direction=1, fwhm=0, std=std)[1]
+  mag = 3
+  f50 = 10
+  f100 = 10 * 2
+  spec_cir_50 = {'a': r, 'b': r, 'std': std, 'mag': mag, 'fwhm_noise': 0, 'fwhm_signal': f50}
+  spec_elp_50 = {'a': r * 2, 'b': r * 0.5, 'std': std, 'mag': mag, 'fwhm_noise': 0, 'fwhm_signal': f50}
+  spec_ramp_50 = {'direction': 1, 'std': std, 'mag': (0, mag), 'fwhm_noise': 0}
+  spec_cir_50_smth = {'a': r, 'b': r, 'std': std, 'mag': mag, 'fwhm_noise': (3 / 2), 'fwhm_signal': f50}
+  spec_elp_50_smth = {'a': r * 2, 'b': r * 0.5, 'std': std, 'mag': mag, 'fwhm_noise': (3 / 2), 'fwhm_signal': f50}
+  spec_ramp_50_smth = {'direction': 1, 'std': std, 'mag': (0, mag), 'fwhm_noise': (3 / 2)}
 
-  m0_ramp_50_c0 = np.sum(np.logical_and(mu_ramp_50 < up0, mu_ramp_50 > lo0))
-  m0_ramp_50_c1 = np.sum(np.logical_and(mu_ramp_50 < up1, mu_ramp_50 > lo1))
-  m0_ramp_50_c2 = np.sum(np.logical_and(mu_ramp_50 < up2, mu_ramp_50 > lo2))
-  m0_ramp_100_c0 = np.sum(np.logical_and(mu_ramp_100 < up0, mu_ramp_100 > lo0))
-  m0_ramp_100_c1 = np.sum(np.logical_and(mu_ramp_100 < up1, mu_ramp_100 > lo1))
-  m0_ramp_100_c2 = np.sum(np.logical_and(mu_ramp_100 < up2, mu_ramp_100 > lo2))
+  spec_cir_100 = {'a': r, 'b': r, 'std': std, 'mag': mag, 'fwhm_noise': 0, 'fwhm_signal': f100}
+  spec_elp_100 = {'a': r * 2, 'b': r * 0.5, 'std': std, 'mag': mag, 'fwhm_noise': 0, 'fwhm_signal': f100}
+  spec_ramp_100 = {'direction': 1, 'std': std, 'mag': (0, mag), 'fwhm_noise': 0}
+  spec_cir_100_smth = {'a': r, 'b': r, 'std': std, 'mag': mag, 'fwhm_noise': 3, 'fwhm_signal': f100}
+  spec_elp_100_smth = {'a': r * 2, 'b': r * 0.5, 'std': std, 'mag': mag, 'fwhm_noise': 3, 'fwhm_signal': f100}
+  spec_ramp_100_smth = {'direction': 1, 'std': std, 'mag': (0, mag), 'fwhm_noise': 3}
 
-  # circles
-  spec_cir_s50 = {'r': 0.45, 'std': std, 'mag': 3, 'fwhm_noise': 0, 'fwhm_signal': 10}
-  spec_cir_s50_smth = {'r': 0.45, 'std': std, 'mag': 3, 'fwhm_noise': 3, 'fwhm_signal': 10}
-  spec_cir_l50 = {'r': 0.8, 'std': std, 'mag': 3, 'fwhm_noise': 0, 'fwhm_signal': 10}
-  spec_cir_l50_smth = {'r': 0.8, 'std': std, 'mag': 3, 'fwhm_noise': 3, 'fwhm_signal': 10}
+  # random field generator
+  circular_50, mu_circular_50 = gen_2D(dim_50, shape="circular", shape_spec=spec_cir_50)
+  ellipse_50, mu_ellipse_50 = gen_2D(dim_50, shape="ellipse", shape_spec=spec_elp_50)
+  ramp_50, mu_ramp_50 = gen_2D(dim_50, shape="ramp", shape_spec=spec_ramp_50)
+  circular_100, mu_circular_100 = gen_2D(dim_100, shape="circular", shape_spec=spec_cir_100)
+  ellipse_100, mu_ellipse_100 = gen_2D(dim_100, shape="ellipse", shape_spec=spec_elp_100)
+  ramp_100, mu_ramp_100 = gen_2D(dim_100, shape="ramp", shape_spec=spec_ramp_100)
 
-  spec_cir_s100 = {'r': 0.45, 'std': std, 'mag': 3, 'fwhm_noise': 0, 'fwhm_signal': 10 * 2}
-  spec_cir_s100_smth = {'r': 0.45, 'std': std, 'mag': 3, 'fwhm_noise': 3 * 2, 'fwhm_signal': 10 * 2}
-  spec_cir_l100 = {'r': 0.8, 'std': std, 'mag': 3, 'fwhm_noise': 0, 'fwhm_signal': 10 * 2}
-  spec_cir_l100_smth = {'r': 0.8, 'std': std, 'mag': 3, 'fwhm_noise': 3 * 2, 'fwhm_signal': 10 * 2}
+  circular_50_smth, _ = gen_2D(dim_50, shape="circular", shape_spec=spec_cir_50_smth)
+  ellipse_50_smth, _ = gen_2D(dim_50, shape="ellipse", shape_spec=spec_elp_50_smth)
+  ramp_50_smth, _ = gen_2D(dim_50, shape="ramp", shape_spec=spec_ramp_50_smth)
+  circular_100_smth, _ = gen_2D(dim_100, shape="circular", shape_spec=spec_cir_100_smth)
+  ellipse_100_smth, _ = gen_2D(dim_100, shape="ellipse", shape_spec=spec_elp_100_smth)
+  ramp_100_smth, _ = gen_2D(dim_100, shape="ramp", shape_spec=spec_ramp_100_smth)
 
-  mu_circular_s50 = circular_2D(dim=dim_50, shape_spec=spec_cir_s50)[1]
-  mu_circular_l50 = circular_2D(dim=dim_50, shape_spec=spec_cir_l50)[1]
-  m0_small50_c0 = np.sum(np.logical_and(mu_circular_s50 < up0, mu_circular_s50 > lo0))
-  m0_small50_c1 = np.sum(np.logical_and(mu_circular_s50 < up1, mu_circular_s50 > lo1))
-  m0_small50_c2 = np.sum(np.logical_and(mu_circular_s50 < up2, mu_circular_s50 > lo2))
-  m0_large50_c0 = np.sum(np.logical_and(mu_circular_l50 < up0, mu_circular_l50 > lo0))
-  m0_large50_c1 = np.sum(np.logical_and(mu_circular_l50 < up1, mu_circular_l50 > lo1))
-  m0_large50_c2 = np.sum(np.logical_and(mu_circular_l50 < up2, mu_circular_l50 > lo2))
+  if c_marg == 0:
+    m0_ramp_50_c0 = np.sum(mu_ramp_50 == c[0])
+    m0_ramp_50_c1 = np.sum(mu_ramp_50 == c[1])
+    m0_ramp_50_c2 = np.sum(mu_ramp_50 == c[2])
+    m0_ramp_100_c0 = np.sum(mu_ramp_100 == c[0])
+    m0_ramp_100_c1 = np.sum(mu_ramp_100 == c[1])
+    m0_ramp_100_c2 = np.sum(mu_ramp_100 == c[2])
+    # circle m0
+    m0_circular_50_c0 = np.sum(mu_circular_50 == c[0])
+    m0_circular_50_c1 = np.sum(mu_circular_50 == c[1])
+    m0_circular_50_c2 = np.sum(mu_circular_50 == c[2])
+    m0_circular_100_c0 = np.sum(mu_circular_100 == c[0])
+    m0_circular_100_c1 = np.sum(mu_circular_100 == c[1])
+    m0_circular_100_c2 = np.sum(mu_circular_100 == c[2])
+    # ellipse m0
+    m0_ellipse_50_c0 = np.sum(mu_ellipse_50 == c[0])
+    m0_ellipse_50_c1 = np.sum(mu_ellipse_50 == c[1])
+    m0_ellipse_50_c2 = np.sum(mu_ellipse_50 == c[2])
+    m0_ellipse_100_c0 = np.sum(mu_ellipse_100 == c[0])
+    m0_ellipse_100_c1 = np.sum(mu_ellipse_100 == c[1])
+    m0_ellipse_100_c2 = np.sum(mu_ellipse_100 == c[2])
 
-  mu_circular_s100 = circular_2D(dim=dim_100, shape_spec=spec_cir_s100)[1]
-  mu_circular_l100 = circular_2D(dim=dim_100, shape_spec=spec_cir_l100)[1]
-  m0_small100_c0 = np.sum(np.logical_and(mu_circular_s100 < up0, mu_circular_s100 > lo0))
-  m0_small100_c1 = np.sum(np.logical_and(mu_circular_s100 < up1, mu_circular_s100 > lo1))
-  m0_small100_c2 = np.sum(np.logical_and(mu_circular_s100 < up2, mu_circular_s100 > lo2))
-  m0_large100_c0 = np.sum(np.logical_and(mu_circular_l100 < up0, mu_circular_l100 > lo0))
-  m0_large100_c1 = np.sum(np.logical_and(mu_circular_l100 < up1, mu_circular_l100 > lo1))
-  m0_large100_c2 = np.sum(np.logical_and(mu_circular_l100 < up2, mu_circular_l100 > lo2))
+  else:
+    # ramp m0
+    m0_ramp_50_c0 = np.sum(np.logical_and(mu_ramp_50 < up0, mu_ramp_50 > lo0))
+    m0_ramp_50_c1 = np.sum(np.logical_and(mu_ramp_50 < up1, mu_ramp_50 > lo1))
+    m0_ramp_50_c2 = np.sum(np.logical_and(mu_ramp_50 < up2, mu_ramp_50 > lo2))
+    m0_ramp_100_c0 = np.sum(np.logical_and(mu_ramp_100 < up0, mu_ramp_100 > lo0))
+    m0_ramp_100_c1 = np.sum(np.logical_and(mu_ramp_100 < up1, mu_ramp_100 > lo1))
+    m0_ramp_100_c2 = np.sum(np.logical_and(mu_ramp_100 < up2, mu_ramp_100 > lo2))
+    # circle m0
+    m0_circular_50_c0 = np.sum(np.logical_and(mu_circular_50 < up0, mu_circular_50 > lo0))
+    m0_circular_50_c1 = np.sum(np.logical_and(mu_circular_50 < up1, mu_circular_50 > lo1))
+    m0_circular_50_c2 = np.sum(np.logical_and(mu_circular_50 < up1, mu_circular_50 > lo1))
+    m0_circular_100_c0 = np.sum(np.logical_and(mu_circular_100 < up0, mu_circular_100 > lo0))
+    m0_circular_100_c1 = np.sum(np.logical_and(mu_circular_100 < up1, mu_circular_100 > lo1))
+    m0_circular_100_c2 = np.sum(np.logical_and(mu_circular_100 < up1, mu_circular_100 > lo1))
+    # ellipse m0
+    m0_ellipse_50_c0 = np.sum(np.logical_and(mu_ellipse_50 < up0, mu_ellipse_50 > lo0))
+    m0_ellipse_50_c1 = np.sum(np.logical_and(mu_ellipse_50 < up1, mu_ellipse_50 > lo1))
+    m0_ellipse_50_c2 = np.sum(np.logical_and(mu_ellipse_50 < up2, mu_ellipse_50 > lo2))
+    m0_ellipse_100_c0 = np.sum(np.logical_and(mu_ellipse_100 < up0, mu_ellipse_100 > lo0))
+    m0_ellipse_100_c1 = np.sum(np.logical_and(mu_ellipse_100 < up1, mu_ellipse_100 > lo1))
+    m0_ellipse_100_c2 = np.sum(np.logical_and(mu_ellipse_100 < up2, mu_ellipse_100 > lo2))
 
   ###################### 50*50 #########################
   # initializing and labeling
   ERR = dict()
   ERR['threshold'] = ["c=" + str(c[0]), "c=" + str(c[1]), "c=" + str(c[2])]
 
-  # small 50*50
-  ERR['circle(s)'] = [[], [], []]
+  # circle
+  ERR['circle'] = [[], [], []]
   for i in np.arange(sim_num):
-    ERR['circle(s)'][0].append(
-      fdr_error_check(dim_50, c=c[0], shape="circular", method=method, shape_spec=spec_cir_s50, alpha=alpha,
-                      tail=tail))
-    ERR['circle(s)'][1].append(
-      fdr_error_check(dim_50, c=c[1], shape="circular", method=method, shape_spec=spec_cir_s50, alpha=alpha,
-                      tail=tail))
-    ERR['circle(s)'][2].append(
-      fdr_error_check(dim_50, c=c[2], shape="circular", method=method, shape_spec=spec_cir_s50, alpha=alpha,
-                      tail=tail))
+    ERR['circle'][0].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[0], shape="circular", method=method, shape_spec=spec_cir_50,
+                  alpha=alpha,
+                  tail=tail))
+    ERR['circle'][1].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[1], shape="circular", method=method, shape_spec=spec_cir_50,
+                  alpha=alpha,
+                  tail=tail))
+    ERR['circle'][2].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[2], shape="circular", method=method, shape_spec=spec_cir_50,
+                  alpha=alpha,
+                  tail=tail))
 
-  # small_smth 50*50
-  ERR['circle(s)smth'] = [[], [], []]
+  # circle smth
+  ERR['circle(smth)'] = [[], [], []]
   for i in np.arange(sim_num):
-    ERR['circle(s)smth'][0].append(
-      fdr_error_check(dim_50, c=c[0], shape="circular", method=method, shape_spec=spec_cir_s50_smth, alpha=alpha,
-                      tail=tail))
-    ERR['circle(s)smth'][1].append(
-      fdr_error_check(dim_50, c=c[1], shape="circular", method=method, shape_spec=spec_cir_s50_smth, alpha=alpha,
-                      tail=tail))
-    ERR['circle(s)smth'][2].append(
-      fdr_error_check(dim_50, c=c[2], shape="circular", method=method, shape_spec=spec_cir_s50_smth, alpha=alpha,
-                      tail=tail))
+    ERR['circle(smth)'][0].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[0], shape="circular", method=method, shape_spec=spec_cir_50_smth,
+                  alpha=alpha,
+                  tail=tail))
+    ERR['circle(smth)'][1].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[1], shape="circular", method=method, shape_spec=spec_cir_50_smth,
+                  alpha=alpha,
+                  tail=tail))
+    ERR['circle(smth)'][2].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[2], shape="circular", method=method, shape_spec=spec_cir_50_smth,
+                  alpha=alpha,
+                  tail=tail))
 
   if method == "adaptive":
-    ERR['alpha(small)'] = [0.05, 0.05, 0.05]
+    ERR['alpha(circle)'] = [0.05, 0.05, 0.05]
   if method == "BH":
-    ERR['alpha*m0/m(small)'] = [np.round(0.05 * m0_small50_c0 / (dimprod_50), 5),
-                                np.round(0.05 * m0_small50_c1 / (dimprod_50), 5),
-                                np.round(0.05 * m0_small50_c2 / (dimprod_50), 5)]
+    ERR['alpha*m0/m(circle)'] = [np.round(0.05 * m0_circular_50_c0 / (dimprod_50), 5),
+                                 np.round(0.05 * m0_circular_50_c1 / (dimprod_50), 5),
+                                 np.round(0.05 * m0_circular_50_c2 / (dimprod_50), 5)]
 
-
-  # large 50*50
-  ERR['circle(l)'] = [[], [], []]
+  # ellipse
+  ERR['ellipse'] = [[], [], []]
   for i in np.arange(sim_num):
-    ERR['circle(l)'][0].append(
-      fdr_error_check(dim_50, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l50, alpha=alpha,
-                      tail=tail))
-    ERR['circle(l)'][1].append(
-      fdr_error_check(dim_50, c=c[1], shape="circular", method=method, shape_spec=spec_cir_l50, alpha=alpha,
-                      tail=tail))
-    ERR['circle(l)'][2].append(
-      fdr_error_check(dim_50, c=c[2], shape="circular", method=method, shape_spec=spec_cir_l50, alpha=alpha,
-                      tail=tail))
+    ERR['ellipse'][0].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[0], shape="ellipse", method=method, shape_spec=spec_elp_50,
+                  alpha=alpha,
+                  tail=tail))
+    ERR['ellipse'][1].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[1], shape="ellipse", method=method, shape_spec=spec_elp_50,
+                  alpha=alpha,
+                  tail=tail))
+    ERR['ellipse'][2].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[2], shape="ellipse", method=method, shape_spec=spec_elp_50,
+                  alpha=alpha,
+                  tail=tail))
 
-  # large_smth 50*50
-  ERR['circle(l)smth'] = [[], [], []]
+  # ellipse smth
+  ERR['ellipse(smth)'] = [[], [], []]
 
   for i in np.arange(sim_num):
-    ERR['circle(l)smth'][0].append(
-      fdr_error_check(dim_50, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l50_smth, alpha=alpha,
-                      tail=tail))
-    ERR['circle(l)smth'][1].append(
-      fdr_error_check(dim_50, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l50_smth, alpha=alpha,
-                      tail=tail))
-    ERR['circle(l)smth'][2].append(
-      fdr_error_check(dim_50, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l50_smth, alpha=alpha,
-                      tail=tail))
-
+    ERR['ellipse(smth)'][0].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[0], shape="circular", method=method, shape_spec=spec_elp_50_smth,
+                  alpha=alpha,
+                  tail=tail))
+    ERR['ellipse(smth)'][1].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[1], shape="circular", method=method, shape_spec=spec_elp_50_smth,
+                  alpha=alpha,
+                  tail=tail))
+    ERR['ellipse(smth)'][2].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[2], shape="circular", method=method, shape_spec=spec_elp_50_smth,
+                  alpha=alpha,
+                  tail=tail))
 
   if method == "adaptive":
-    ERR['alpha(large)'] = [0.05, 0.05, 0.05]
+    ERR['alpha(ellipse)'] = [0.05, 0.05, 0.05]
   if method == "BH":
-    ERR['alpha*m0/m(large)'] = [np.round(0.05 * m0_large50_c0 / (dimprod_50), 5),
-                                np.round(0.05 * m0_large50_c1 / (dimprod_50), 5),
-                                np.round(0.05 * m0_large50_c2 / (dimprod_50), 5)]
+    ERR['alpha*m0/m(ellipse)'] = [np.round(0.05 * m0_ellipse_50_c0 / (dimprod_50), 5),
+                                  np.round(0.05 * m0_ellipse_50_c1 / (dimprod_50), 5),
+                                  np.round(0.05 * m0_ellipse_50_c2 / (dimprod_50), 5)]
 
-  # ramp 50*50
+  # ramp
   ERR['ramp'] = [[], [], []]
   for i in np.arange(sim_num):
     ERR['ramp'][0].append(
-      fdr_error_check(dim_50, c=c[0], shape="ramp", method=method, mag=3, direction=1, fwhm=0, std=std,
-                      alpha=alpha, tail=tail))
+      error_check(mode=mode, dim=dim_50, threshold=c[0], shape="ramp", method=method, shape_spec=spec_ramp_50,
+                  alpha=alpha, tail=tail))
     ERR['ramp'][1].append(
-      fdr_error_check(dim_50, c=c[1], shape="ramp", method=method, mag=3, direction=1, fwhm=0, std=std,
-                      alpha=alpha, tail=tail))
+      error_check(mode=mode, dim=dim_50, threshold=c[1], shape="ramp", method=method, shape_spec=spec_ramp_50,
+                  alpha=alpha, tail=tail))
     ERR['ramp'][2].append(
-      fdr_error_check(dim_50, c=c[2], shape="ramp", method=method, mag=3, direction=1, fwhm=0, std=std,
-                      alpha=alpha, tail=tail))
+      error_check(mode=mode, dim=dim_50, threshold=c[2], shape="ramp", method=method, shape_spec=spec_ramp_50,
+                  alpha=alpha, tail=tail))
 
-  # ramp_smth 50*50
-  ERR['ramp_smth'] = [[], [], []]
+  # ramp smth
+  ERR['ramp(smth)'] = [[], [], []]
   for i in np.arange(sim_num):
-    ERR['ramp_smth'][0].append(
-      fdr_error_check(dim_50, c=c[0], shape="ramp", method=method, mag=3, direction=1, fwhm=3, std=std,
-                      alpha=alpha, tail=tail))
-    ERR['ramp_smth'][1].append(
-      fdr_error_check(dim_50, c=c[1], shape="ramp", method=method, mag=3, direction=1, fwhm=3, std=std,
-                      alpha=alpha, tail=tail))
-    ERR['ramp_smth'][2].append(
-      fdr_error_check(dim_50, c=c[2], shape="ramp", method=method, mag=3, direction=1, fwhm=3, std=std,
-                      alpha=alpha, tail=tail))
+    ERR['ramp(smth)'][0].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[0], shape="ramp", method=method, shape_spec=spec_ramp_50_smth,
+                  alpha=alpha, tail=tail))
+    ERR['ramp(smth)'][1].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[1], shape="ramp", method=method, shape_spec=spec_ramp_50_smth,
+                  alpha=alpha, tail=tail))
+    ERR['ramp(smth)'][2].append(
+      error_check(mode=mode, dim=dim_50, threshold=c[2], shape="ramp", method=method, shape_spec=spec_ramp_50_smth,
+                  alpha=alpha, tail=tail))
 
   if method == "adaptive":
     ERR['alpha(ramp)'] = [0.05, 0.05, 0.05]
@@ -498,7 +562,6 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
     ERR['alpha*m0/m(ramp)'] = [np.round(0.05 * m0_ramp_50_c0 / (dimprod_50), 5),
                                np.round(0.05 * m0_ramp_50_c1 / (dimprod_50), 5),
                                np.round(0.05 * m0_ramp_50_c2 / (dimprod_50), 5)]
-
 
   ERR_key_calc = [list(ERR.keys())[i] for i in [1, 2, 4, 5, 7, 8]]
   ERR.update({n: np.round(np.nanmean(ERR[n], axis=1), 4) for n in ERR_key_calc})
@@ -508,103 +571,106 @@ def fdr_error_check_sim(sim_num, method, c, c_marg=0.2, std=5, tail="two", alpha
   ERR2 = dict()
   ERR2['threshold'] = ["c=" + str(c[0]), "c=" + str(c[1]), "c=" + str(c[2])]
 
-  # small 100*100
-  ERR2['circle(s)'] = [[], [], []]
+  # circle
+  ERR2['circle'] = [[], [], []]
   for i in np.arange(sim_num):
-    ERR2['circle(s)'][0].append(
-      fdr_error_check(dim_100, c=c[0], shape="circular", method=method, shape_spec=spec_cir_s100, alpha=alpha,
-                      tail=tail))
-    ERR2['circle(s)'][1].append(
-      fdr_error_check(dim_100, c=c[1], shape="circular", method=method, shape_spec=spec_cir_s100, alpha=alpha,
-                      tail=tail))
-    ERR2['circle(s)'][2].append(
-      fdr_error_check(dim_100, c=c[2], shape="circular", method=method, shape_spec=spec_cir_s100, alpha=alpha,
-                      tail=tail))
+    ERR2['circle'][0].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[0], shape="circular", method=method, shape_spec=spec_cir_100,
+                  alpha=alpha,
+                  tail=tail))
+    ERR2['circle'][1].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[1], shape="circular", method=method, shape_spec=spec_cir_100,
+                  alpha=alpha,
+                  tail=tail))
+    ERR2['circle'][2].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[2], shape="circular", method=method, shape_spec=spec_cir_100,
+                  alpha=alpha,
+                  tail=tail))
 
-  # small_smth 100*100
-  ERR2['circle(s)smth'] = [[], [], []]
+  # circle smth
+  ERR2['circle(smth)'] = [[], [], []]
   for i in np.arange(sim_num):
-    ERR2['circle(s)smth'][0].append(
-      fdr_error_check(dim_100, c=c[0], shape="circular", method=method, shape_spec=spec_cir_s100_smth,
-                      alpha=alpha, tail=tail))
-    ERR2['circle(s)smth'][1].append(
-      fdr_error_check(dim_100, c=c[1], shape="circular", method=method, shape_spec=spec_cir_s100_smth,
-                      alpha=alpha, tail=tail))
-    ERR2['circle(s)smth'][2].append(
-      fdr_error_check(dim_100, c=c[2], shape="circular", method=method, shape_spec=spec_cir_s100_smth,
-                      alpha=alpha, tail=tail))
+    ERR2['circle(smth)'][0].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[0], shape="circular", method=method, shape_spec=spec_cir_100_smth,
+                  alpha=alpha, tail=tail))
+    ERR2['circle(smth)'][1].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[1], shape="circular", method=method, shape_spec=spec_cir_100_smth,
+                  alpha=alpha, tail=tail))
+    ERR2['circle(smth)'][2].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[2], shape="circular", method=method, shape_spec=spec_cir_100_smth,
+                  alpha=alpha, tail=tail))
 
   if method == "adaptive":
-    ERR2['alpha(small)'] = [0.05, 0.05, 0.05]
+    ERR2['alpha(circle)'] = [0.05, 0.05, 0.05]
   if method == "BH":
-    ERR2['alpha*m0/m(small)'] = [np.round(0.05 * m0_small100_c0 / (dimprod_100), 5),
-                                 np.round(0.05 * m0_small100_c1 / (dimprod_100), 5),
-                                 np.round(0.05 * m0_small100_c2 / (dimprod_100), 5)]
+    ERR2['alpha*m0/m(circle)'] = [np.round(0.05 * m0_circular_100_c0 / (dimprod_100), 5),
+                                  np.round(0.05 * m0_circular_100_c1 / (dimprod_100), 5),
+                                  np.round(0.05 * m0_circular_100_c2 / (dimprod_100), 5)]
 
-  # large 100*100
-  ERR2['circle(l)'] = [[], [], []]
+  # ellipse
+  ERR2['ellipse'] = [[], [], []]
   for i in np.arange(sim_num):
-    ERR2['circle(l)'][0].append(
-      fdr_error_check(dim_100, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l100, alpha=alpha,
-                      tail=tail))
-    ERR2['circle(l)'][1].append(
-      fdr_error_check(dim_100, c=c[1], shape="circular", method=method, shape_spec=spec_cir_l100, alpha=alpha,
-                      tail=tail))
-    ERR2['circle(l)'][2].append(
-      fdr_error_check(dim_100, c=c[2], shape="circular", method=method, shape_spec=spec_cir_l100, alpha=alpha,
-                      tail=tail))
+    ERR2['ellipse'][0].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[0], shape="ellipse", method=method, shape_spec=spec_elp_100,
+                  alpha=alpha,
+                  tail=tail))
+    ERR2['ellipse'][1].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[1], shape="ellipse", method=method, shape_spec=spec_elp_100,
+                  alpha=alpha,
+                  tail=tail))
+    ERR2['ellipse'][2].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[2], shape="ellipse", method=method, shape_spec=spec_elp_100,
+                  alpha=alpha,
+                  tail=tail))
 
-  # large_smth 100*100
-  ERR2['circle(l)smth'] = [[], [], []]
+  # ellipse smth
+  ERR2['ellipse(smth)'] = [[], [], []]
 
   for i in np.arange(sim_num):
-    ERR2['circle(l)smth'][0].append(
-      fdr_error_check(dim_100, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l100_smth,
-                      alpha=alpha, tail=tail))
-    ERR2['circle(l)smth'][1].append(
-      fdr_error_check(dim_100, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l100_smth,
-                      alpha=alpha, tail=tail))
-    ERR2['circle(l)smth'][2].append(
-      fdr_error_check(dim_100, c=c[0], shape="circular", method=method, shape_spec=spec_cir_l100_smth,
-                      alpha=alpha, tail=tail))
+    ERR2['ellipse(smth)'][0].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[0], shape="ellipse", method=method, shape_spec=spec_elp_100_smth,
+                  alpha=alpha, tail=tail))
+    ERR2['ellipse(smth)'][1].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[1], shape="ellipse", method=method, shape_spec=spec_elp_100_smth,
+                  alpha=alpha, tail=tail))
+    ERR2['ellipse(smth)'][2].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[2], shape="ellipse", method=method, shape_spec=spec_elp_100_smth,
+                  alpha=alpha, tail=tail))
 
   if method == "adaptive":
-    ERR2['alpha(large)'] = [0.05, 0.05, 0.05]
+    ERR2['alpha(ellipse)'] = [0.05, 0.05, 0.05]
   if method == "BH":
-    ERR2['alpha*m0/m(large)'] = [np.round(0.05 * m0_large100_c0 / (dimprod_100), 5),
-                                 np.round(0.05 * m0_large100_c1 / (dimprod_100), 5),
-                                 np.round(0.05 * m0_large100_c2 / (dimprod_100), 5)]
-
+    ERR2['alpha*m0/m(ellipse)'] = [np.round(0.05 * m0_ellipse_100_c0 / (dimprod_100), 5),
+                                   np.round(0.05 * m0_ellipse_100_c1 / (dimprod_100), 5),
+                                   np.round(0.05 * m0_ellipse_100_c2 / (dimprod_100), 5)]
 
   # ramp 100*100
   ERR2['ramp'] = [[], [], []]
   for i in np.arange(sim_num):
     ERR2['ramp'][0].append(
-      fdr_error_check(dim_100, c=c[0], shape="ramp", method=method, mag=3, direction=1, fwhm=0, std=std,
-                      alpha=alpha, tail=tail))
+      error_check(mode=mode, dim=dim_100, threshold=c[0], shape="ramp", method=method, shape_spec=spec_ramp_100,
+                  alpha=alpha, tail=tail))
     ERR2['ramp'][1].append(
-      fdr_error_check(dim_100, c=c[1], shape="ramp", method=method, mag=3, direction=1, fwhm=0, std=std,
-                      alpha=alpha, tail=tail))
+      error_check(mode=mode, dim=dim_100, threshold=c[1], shape="ramp", method=method, shape_spec=spec_ramp_100,
+                  alpha=alpha, tail=tail))
     ERR2['ramp'][2].append(
-      fdr_error_check(dim_100, c=c[2], shape="ramp", method=method, mag=3, direction=1, fwhm=0, std=std,
-                      alpha=alpha, tail=tail))
-
+      error_check(mode=mode, dim=dim_100, threshold=c[2], shape="ramp", method=method, shape_spec=spec_ramp_100,
+                  alpha=alpha, tail=tail))
   # ramp_smth 50*50
-  ERR2['ramp_smth'] = [[], [], []]
+  ERR2['ramp(smth)'] = [[], [], []]
   for i in np.arange(sim_num):
-    ERR2['ramp_smth'][0].append(
-      fdr_error_check(dim_100, c=c[0], shape="ramp", method=method, mag=3, direction=1, fwhm=3 * 2, std=std,
-                      alpha=alpha, tail=tail))
-    ERR2['ramp_smth'][1].append(
-      fdr_error_check(dim_100, c=c[1], shape="ramp", method=method, mag=3, direction=1, fwhm=3 * 2, std=std,
-                      alpha=alpha, tail=tail))
-    ERR2['ramp_smth'][2].append(
-      fdr_error_check(dim_100, c=c[2], shape="ramp", method=method, mag=3, direction=1, fwhm=3 * 2, std=std,
-                      alpha=alpha, tail=tail))
-
+    ERR2['ramp(smth)'][0].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[0], shape="ramp", method=method, shape_spec=spec_ramp_100_smth,
+                  alpha=alpha, tail=tail))
+    ERR2['ramp(smth)'][1].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[1], shape="ramp", method=method, shape_spec=spec_ramp_100_smth,
+                  alpha=alpha, tail=tail))
+    ERR2['ramp(smth)'][2].append(
+      error_check(mode=mode, dim=dim_100, threshold=c[2], shape="ramp", method=method, shape_spec=spec_ramp_100_smth,
+                  alpha=alpha, tail=tail))
 
   if method == "adaptive":
-    ERR2['alpha(large)'] = [0.05, 0.05, 0.05]
+    ERR2['alpha(ramp)'] = [0.05, 0.05, 0.05]
   if method == "BH":
     ERR2['alpha*m0/m(ramp)'] = [np.round(0.05 * m0_ramp_100_c0 / (100 * 100), 5),
                                 np.round(0.05 * m0_ramp_100_c1 / (100 * 100), 5),
@@ -623,6 +689,7 @@ def gen_2D(dim, shape, shape_spec, truncate=3):
   fwhm_noise = shape_spec['fwhm_noise']
   std = shape_spec['std']
   nsubj = dim[0]
+  mu = np.zeros(dim)
 
   # signal
   if shape == "ramp":
@@ -676,50 +743,60 @@ def ellipse_2D(dim, shape_spec, truncate=4):
   return(mu)
 
 
-def conf_plot_agg(c, method, std = 5, tail="two", _min=0, _max=3, fontsize = 25, figsize=(30, 20)):
+def conf_plot_agg(threshold, method, r=0.5, std = 5, mag = 3, tail="two", _min=0, _max=3, fontsize = 25, figsize=(30, 20)):
+  cmap1 = colors.ListedColormap(['black', 'blue'])
+  cmap2 = colors.ListedColormap(['none', 'yellow'])
+  cmap3 = colors.ListedColormap(['none', 'red'])
   dim_100 = (80,100,100)
-  spec_cir_l100 = {'r':0.8, 'std':std,'mag':3, 'fwhm_noise':0, 'fwhm_signal':10*2 }
-  spec_cir_s100 = {'r':0.45, 'std':std,'mag':3, 'fwhm_noise':0, 'fwhm_signal':10*2 }
-  spec_cir_l100_smth = {'r':0.8, 'std':std,'mag':3, 'fwhm_noise':3*2, 'fwhm_signal':10*2 }
-  spec_cir_s100_smth = {'r':0.45, 'std':std,'mag':3, 'fwhm_noise':3*2, 'fwhm_signal':10*2 }
+  f50 = 10
+  f100 = 10*2
+  spec_cir_100 = {'a':r, 'b':r, 'std':std,'mag':mag, 'fwhm_noise':0, 'fwhm_signal':f100}
+  spec_elp_100 = {'a':r*2, 'b':r*0.5, 'std':std,'mag':mag, 'fwhm_noise':0, 'fwhm_signal':f100}
+  spec_ramp_100 = {'direction':1, 'std':std,'mag':(0,mag), 'fwhm_noise':0}
+  spec_cir_100_smth = {'a':r, 'b':r, 'std':std, 'mag':mag, 'fwhm_noise':3, 'fwhm_signal':f100}
+  spec_elp_100_smth = {'a':r*2, 'b':r*0.5, 'std':std,'mag':mag, 'fwhm_noise':3, 'fwhm_signal':f100}
+  spec_ramp_100_smth = {'direction':1, 'std':std, 'mag':(0,mag), 'fwhm_noise':3}
 
-  circular_l100 = circular_2D(dim=dim_100, shape_spec=spec_cir_l100)[0]
-  circular_s100 = circular_2D(dim=dim_100, shape_spec=spec_cir_s100)[0]
-  circular_l100_smth = circular_2D(dim=dim_100, shape_spec=spec_cir_l100_smth)[0]
-  circular_s100_smth = circular_2D(dim=dim_100, shape_spec=spec_cir_s100_smth)[0]
-  ramp_100 = ramp_2D(dim=dim_100, mag=(0,3), direction=1, fwhm=0, std=std)[0]
-  ramp_100_smth = ramp_2D(dim=dim_100, mag=(0,3), direction=1, fwhm=3*2, std=std)[0]
+  circular_100, mu_circular_100 = gen_2D(dim_100, shape="ellipse", shape_spec=spec_cir_100)
+  ellipse_100, mu_ellipse_100 = gen_2D(dim_100, shape="ellipse", shape_spec=spec_elp_100)
+  ramp_100, mu_ramp_100 = gen_2D(dim_100, shape="ramp", shape_spec=spec_ramp_100)
+  circular_100_smth, _ = gen_2D(dim_100, shape="ellipse", shape_spec=spec_cir_100_smth)
+  ellipse_100_smth, _ = gen_2D(dim_100, shape="ellipse", shape_spec=spec_elp_100_smth)
+  ramp_100_smth, _ = gen_2D(dim_100, shape="ramp", shape_spec=spec_ramp_100_smth)
 
-  fig, axs = plt.subplots(2, 4, figsize=figsize)
 
-  im = axs[0, 0].imshow(fdr_cope(data=circular_l100, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[0, 0].set_title("large circle (100*100)", fontsize = fontsize)
+  cmap = colors.ListedColormap(['black', 'blue', 'yellow', 'red'])
+  fig, axs = plt.subplots(2,3, figsize=figsize)
 
-  im = axs[0, 1].imshow(fdr_cope(data=circular_s100, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[0, 1].set_title("small circle (100*100)", fontsize = fontsize)
+  im = axs[0, 0].imshow(fdr_cope(data=circular_100, method=method, threshold=threshold, tail=tail)[0], cmap=cmap1)
+  im = axs[0, 0].imshow(fdr_cope(data=circular_100, method=method, threshold=threshold, tail=tail)[2], cmap=cmap2)
+  im = axs[0, 0].imshow(fdr_cope(data=circular_100, method=method, threshold=threshold, tail=tail)[1], cmap=cmap3)
+  axs[0, 0].set_title("circle", fontsize = fontsize)
 
-  im = axs[0, 2].imshow(fdr_cope(data=circular_l100_smth, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[0, 2].set_title("large circle (100*100, smoothed noise)", fontsize = fontsize)
+  im = axs[0, 1].imshow(fdr_cope(data=ellipse_100, method=method, threshold=threshold, tail=tail)[0], cmap=cmap1)
+  im = axs[0, 1].imshow(fdr_cope(data=ellipse_100, method=method, threshold=threshold, tail=tail)[2], cmap=cmap2)
+  im = axs[0, 1].imshow(fdr_cope(data=ellipse_100, method=method, threshold=threshold, tail=tail)[1], cmap=cmap3)
+  axs[0, 1].set_title("ellipse", fontsize = fontsize)
 
-  im = axs[0, 3].imshow(fdr_cope(data=circular_s100_smth, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[0, 3].set_title("small circle (100*100, smoothed noise)", fontsize = fontsize)
+  im = axs[0, 2].imshow(fdr_cope(data=ramp_100, method=method, threshold=threshold, tail=tail)[0], cmap=cmap1)
+  im = axs[0, 2].imshow(fdr_cope(data=ramp_100, method=method, threshold=threshold, tail=tail)[2], cmap=cmap2)
+  im = axs[0, 2].imshow(fdr_cope(data=ramp_100, method=method, threshold=threshold, tail=tail)[1], cmap=cmap3)
+  axs[0, 2].set_title("ramp", fontsize = fontsize)
 
-  im = axs[1, 0].imshow(fdr_cope(data=ramp_100, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[1, 0].set_title("ramp (100*100)", fontsize = fontsize)
+  im = axs[1, 0].imshow(fdr_cope(data=circular_100_smth, method=method, threshold=threshold, tail=tail)[0], cmap=cmap1)
+  im = axs[1, 0].imshow(fdr_cope(data=circular_100_smth, method=method, threshold=threshold, tail=tail)[2], cmap=cmap2)
+  im = axs[1, 0].imshow(fdr_cope(data=circular_100_smth, method=method, threshold=threshold, tail=tail)[1], cmap=cmap3)
+  axs[1, 0].set_title("circle(smoothed)", fontsize = fontsize)
 
-  im = axs[1, 2].imshow(fdr_cope(data=ramp_100_smth, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[1, 2].set_title("ramp (100*100, smoothed noise)", fontsize = fontsize)
 
-  axs[1, 1].text(0.5, 0.5, s='',
-               fontsize = 20,horizontalalignment='center',
-     verticalalignment='center')
-  axs[1, 1].set_axis_off()
-  axs[1, 3].text(0.5, 0.5, s='',
-               fontsize = 20,horizontalalignment='center',
-     verticalalignment='center')
-  axs[1, 3].set_axis_off()
+  im = axs[1, 1].imshow(fdr_cope(data=ellipse_100_smth, method=method, threshold=threshold, tail=tail)[0], cmap=cmap1)
+  im = axs[1, 1].imshow(fdr_cope(data=ellipse_100_smth, method=method, threshold=threshold, tail=tail)[2], cmap=cmap2)
+  im = axs[1, 1].imshow(fdr_cope(data=ellipse_100_smth, method=method, threshold=threshold, tail=tail)[1], cmap=cmap3)
+  axs[1, 1].set_title("ellipse(smoothed)", fontsize = fontsize)
 
-  cbar_ax = fig.add_axes([0.95, 0.35, 0.015, 0.5])
-  fig.colorbar(im, cax=cbar_ax)
+  im = axs[1, 2].imshow(fdr_cope(data=ramp_100_smth, method=method, threshold=threshold, tail=tail)[0], cmap=cmap1)
+  im = axs[1, 2].imshow(fdr_cope(data=ramp_100_smth, method=method, threshold=threshold, tail=tail)[2], cmap=cmap2)
+  im = axs[1, 2].imshow(fdr_cope(data=ramp_100_smth, method=method, threshold=threshold, tail=tail)[1], cmap=cmap3)
+  axs[1, 2].set_title("ramp(smoothed)", fontsize = fontsize)
 
   plt.show()
