@@ -185,7 +185,7 @@ def mvtstat(data):
   return(tstat)
 
 
-def fdr_adaptive(pvalues, k, alpha0=0.05 / 4, alpha1=0.05 / 2):
+def fdr_adaptive(pvalues, k=2, alpha0=0.05 / 4, alpha1=0.05 / 2):
   """
   the two-stage adaptive step-up procedure to control for false discovery rate
 
