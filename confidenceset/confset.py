@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 from .random_field_generator import *
 
 def fdr_BH(pvalues, alpha=0.05):

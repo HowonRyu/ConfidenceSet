@@ -1,6 +1,7 @@
 import numpy as np
-import scipy.stats
+import scipy
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 from scipy.ndimage import gaussian_filter
 import matplotlib.colors as colors
 from .confset import *
