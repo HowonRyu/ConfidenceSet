@@ -3,7 +3,6 @@ import sys
 import scipy
 from .confset import *
 from .random_field_generator import *
-from .plot import *
 ### FDR and power tests
 
 
