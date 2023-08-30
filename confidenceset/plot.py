@@ -3,6 +3,10 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 import matplotlib.colors as colors
+from confset import *
+from random_field_generator import *
+from test import *
+
 
 # Confidence Set Plotting
 def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, mag = 3, fontsize = 25, figsize=(30, 20), alpha=0.05):

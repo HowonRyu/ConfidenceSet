@@ -1,5 +1,7 @@
 import numpy as np
-
+from confset import *
+from random_field_generator import *
+from plot import *
 ### FDR and power tests
 
 
