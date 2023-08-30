@@ -218,6 +218,8 @@ def error_check_plot(sim_num, c, mode, shape_spec, figsize=(15,10)):
   """
 
   shapes = ["circular", "ellipse", "ramp"]
+  dim_50 = (80,50,50)
+  dim_100 = (100,50,50)
   # 50*50
   shape_specs_50 = shape_spec[0]
   fig, axs = plt.subplots(len(shape_specs_50), 3, figsize=figsize)
