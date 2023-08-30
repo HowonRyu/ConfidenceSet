@@ -1,50 +1,89 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
-import matplotlib.pyplot as plt
-
-def ramp_2D(dim, mag, direction=0, fwhm=0, std=1, truncate=4):
-  nsubj = dim[0]
-
-  # signal
-  if direction == 0: #vertical
-    mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2])[::-1],dim[1]).reshape(dim[1],dim[2])
-  else: #horizontal
-    mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2]),dim[1]).reshape(dim[2],dim[1]).transpose()
-  mu = np.array(mu_temp, dtype='float')
-  #mu = np.tile(mu_temp, nsubj).reshape(dim)
 
 
-  # noise
-  noise = np.random.randn(*dim) * std
-  sigma = fwhm / np.sqrt(8 * np.log(2))
+def gen_spec(fwhm_sig=10, fwhm_noise=5, std=5, mag=4, r=0.5):
+  """
+  generates dictionaries of the shape spec sets to be used in random field generator
 
-  for i in np.arange(nsubj):
-    noise[i,:,:] = gaussian_filter(noise[i,:,:], sigma = sigma, truncate=truncate)  #smoothing
+  Parameters
+  ----------
+  fwhm_sig : int
+    full width at half maximum for signal
+  fwhm_noise : int
+    full width at half maximum for noise field
+  std : int
+    standard deviation for the noise field N(0, std^2)
+  mag : int
+    magnitude of the signal
+  r : int
+    radii of ellipses
 
-  data = np.array(mu + noise, dtype='float')
+  Returns
+  -------
+  spec_dic_set_50 : list
+    list of dictionaries for image dimension 50*50
+  spec_dic_set_100 : list
+    list of dictionaries for image dimension 100*100
 
-  return(data, mu)
+  Examples
+  --------
+  spec_50, spec_100 = gen_spec(fwhm_sig=10, fwhm_noise=0, std=5, mag=4, r=0.5)
+  gen_2D(80, 50, 50)), shape="ellipse", shape_spec=spec_50[0])
+
+  :Authors:
+    Howon Ryu <howonryu@ucsd.edu>
+  """
+  cir_50 = {'a':r, 'b':r, 'std':std,'mag':mag, 'fwhm_noise':fwhm_noise/2, 'fwhm_signal':fwhm_sig/2}
+  elp_50 = {'a':r*2, 'b':r*0.5, 'std':std,'mag':mag, 'fwhm_noise':fwhm_noise/2, 'fwhm_signal':fwhm_sig/2}
+  ramp_50 = {'direction':1, 'std':std,'mag':(0,mag), 'fwhm_noise':fwhm_noise/2, 'fwhm_signal':0}
+  spec_dic_set_50 = [cir_50, elp_50, ramp_50]
+
+  cir_100 = {'a':r, 'b':r, 'std':std,'mag':mag, 'fwhm_noise':fwhm_noise, 'fwhm_signal':fwhm_sig}
+  elp_100 = {'a':r*2, 'b':r*0.5, 'std':std,'mag':mag, 'fwhm_noise':fwhm_noise, 'fwhm_signal':fwhm_sig}
+  ramp_100 = {'direction':1, 'std':std,'mag':(0,mag), 'fwhm_noise':fwhm_noise, 'fwhm_signal':0}
+  spec_dic_set_100 = [cir_100, elp_100, ramp_100]
+
+  return(spec_dic_set_50, spec_dic_set_100)
 
 
-def circular_2D(dim, shape_spec, truncate=4):
-  nsubj = dim[0]
-  r = shape_spec['r']
-  mag = shape_spec['mag']
+
+
+def gen_2D(dim, shape, shape_spec, truncate=3):
+  """
+  generates 2D image
+
+  Parameters
+  ----------
+  dim : int
+    dimension of the image (N, W, H)
+  shape : str
+    shape of the signal; choose from ramp or ellipse which includes circular
+  truncate : int
+    truncation point for the smoothing
+
+  Returns
+  -------
+  data : array
+    generated 2D field
+  mu : array
+    generated 2D signal (mu) field
+
+  Examples
+  --------
+  spec_50, spec_100 = gen_spec(fwhm_sig=10, fwhm_noise=0, std=5, mag=4, r=0.5)
+  gen_2D(80, 50, 50)), shape="ellipse", shape_spec=spec_50[0])
+  """
   fwhm_noise = shape_spec['fwhm_noise']
-  fwhm_signal = shape_spec['fwhm_signal']
-  fwhm_signal = shape_spec['fwhm_signal']
   std = shape_spec['std']
-
-  sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
+  nsubj = dim[0]
+  mu = np.zeros(dim)
 
   # signal
-  x, y = np.meshgrid(np.linspace(-1,1,dim[1]), np.linspace(-1,1,dim[2]))
-  cx, cy = 0, 0
-  circle = np.array((np.sqrt((x-cx)**2 + (y-cy)**2) <= r), dtype='float')
-
-  sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
-  circle_smth = gaussian_filter(circle, sigma = sigma_signal, truncate=truncate)
-  mu = np.array(circle_smth * mag, dtype='float')
+  if shape == "ramp":
+    mu = ramp_2D(dim=dim, shape_spec=shape_spec)
+  else:
+    mu = ellipse_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
 
   # noise
   noise = np.random.randn(*dim) * std
@@ -57,51 +96,79 @@ def circular_2D(dim, shape_spec, truncate=4):
   return(data, mu)
 
 
+def ramp_2D(dim, shape_spec):
+  """
+  generates 2D ramp signal
 
-def conf_plot_agg(c, method, std = 5, tail="two", _min=0, _max=3, fontsize = 25, figsize=(30, 20)):
-  dim_100 = (80,100,100)
-  spec_cir_l100 = {'r':0.8, 'std':std,'mag':3, 'fwhm_noise':0, 'fwhm_signal':10*2 }
-  spec_cir_s100 = {'r':0.45, 'std':std,'mag':3, 'fwhm_noise':0, 'fwhm_signal':10*2 }
-  spec_cir_l100_smth = {'r':0.8, 'std':std,'mag':3, 'fwhm_noise':3*2, 'fwhm_signal':10*2 }
-  spec_cir_s100_smth = {'r':0.45, 'std':std,'mag':3, 'fwhm_noise':3*2, 'fwhm_signal':10*2 }
+  Parameters
+  ----------
+  dim : int
+    dimension of the image (N, W, H)
+  shape_spec : dict
+    dictionary storing shape parameters including direction, mag, and std
 
-  circular_l100 = circular_2D(dim=dim_100, shape_spec=spec_cir_l100)[0]
-  circular_s100 = circular_2D(dim=dim_100, shape_spec=spec_cir_s100)[0]
-  circular_l100_smth = circular_2D(dim=dim_100, shape_spec=spec_cir_l100_smth)[0]
-  circular_s100_smth = circular_2D(dim=dim_100, shape_spec=spec_cir_s100_smth)[0]
-  ramp_100 = ramp_2D(dim=dim_100, mag=(0,3), direction=1, fwhm=0, std=std)[0]
-  ramp_100_smth = ramp_2D(dim=dim_100, mag=(0,3), direction=1, fwhm=3*2, std=std)[0]
+  Returns
+  -------
+  mu : array
+    generated 2D signal (mu) field
 
-  fig, axs = plt.subplots(2, 4, figsize=figsize)
+  Examples
+  --------
+  mu = ramp_2D(dim=dim, shape_spec=shape_spec)
+  """
+  nsubj = dim[0]
+  direction = shape_spec['direction']
+  mag = shape_spec['mag']
+  std = shape_spec['std']
 
-  im = axs[0, 0].imshow(fdr_cope(data=circular_l100, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[0, 0].set_title("large circle (100*100)", fontsize = fontsize)
+  # signal
+  if direction == 0: #vertical
+    mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2])[::-1],dim[1]).reshape(dim[1],dim[2])
+  if direction == 1: #horizontal
+    mu_temp = np.repeat(np.linspace(mag[0], mag[1], dim[2]),dim[1]).reshape(dim[2],dim[1]).transpose()
+  mu = np.array(mu_temp, dtype='float')
+  return(mu)
 
-  im = axs[0, 1].imshow(fdr_cope(data=circular_s100, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[0, 1].set_title("small circle (100*100)", fontsize = fontsize)
+def ellipse_2D(dim, shape_spec, truncate=4):
+  """
+  generates 2D ellipse signal
 
-  im = axs[0, 2].imshow(fdr_cope(data=circular_l100_smth, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[0, 2].set_title("large circle (100*100, smoothed noise)", fontsize = fontsize)
+  Parameters
+  ----------
+  dim : int
+    dimension of the image (N, W, H)
+  shape_spec : dict
+    dictionary storing shape parameters including a, b, mag, std, and fwhm_signal
+  truncate : int
+    truncation point for the smoothing
 
-  im = axs[0, 3].imshow(fdr_cope(data=circular_s100_smth, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[0, 3].set_title("small circle (100*100, smoothed noise)", fontsize = fontsize)
+  Returns
+  -------
+  mu : array
+    generated 2D signal (mu) field
 
-  im = axs[1, 0].imshow(fdr_cope(data=ramp_100, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[1, 0].set_title("ramp (100*100)", fontsize = fontsize)
+  Examples
+  --------
+  mu = ellipse_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
+  """
+  nsubj = dim[0]
+  a = shape_spec['a']
+  b = shape_spec['b']
+  mag = shape_spec['mag']
+  fwhm_signal = shape_spec['fwhm_signal']
 
-  im = axs[1, 2].imshow(fdr_cope(data=ramp_100_smth, method=method, threshold=c, tail=tail)[3], vmin=_min, vmax=_max)
-  axs[1, 2].set_title("ramp (100*100, smoothed noise)", fontsize = fontsize)
+  # signal
+  x, y = np.meshgrid(np.linspace(-1,1,dim[1]), np.linspace(-1,1,dim[2]))
+  cx, cy = 0,0
+  theta = -np.pi/4
+  xx = np.cos(theta)*(x-cx) + np.sin(theta)*(y-cy)
+  yy = -np.sin(theta)*(x-cx) + np.cos(theta)*(y-cy)
+  ellipse = np.array((xx/a)**2 + (yy/b)**2 <= 1, dtype="float")
 
-  axs[1, 1].text(0.5, 0.5, s='',
-               fontsize = 20,horizontalalignment='center',
-     verticalalignment='center')
-  axs[1, 1].set_axis_off()
-  axs[1, 3].text(0.5, 0.5, s='',
-               fontsize = 20,horizontalalignment='center',
-     verticalalignment='center')
-  axs[1, 3].set_axis_off()
+  sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
+  ellipse_smth = gaussian_filter(ellipse, sigma = sigma_signal, truncate=truncate)
+  mu = np.array(ellipse_smth * mag, dtype='float')
 
-  cbar_ax = fig.add_axes([0.95, 0.35, 0.015, 0.5])
-  fig.colorbar(im, cax=cbar_ax)
+  return(mu)
 
-  plt.show()
+
