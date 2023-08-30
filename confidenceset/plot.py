@@ -30,7 +30,7 @@ def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, mag = 3, fontsiz
     magnitude of the signal
   fontsize : int
     font size for figure
-  figsize : int
+  figsize : tuple
     figure size
   alpha : int
     [0, 1] alpha level
@@ -104,6 +104,62 @@ def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, mag = 3, fontsiz
 # Error Check Plotting
 def error_check_plot_single(sim_num, mode, shape, shape_spec, c, dim, ax, c_marg=0.2,
                                       tail="two", alpha=0.05, alpha0=0.05/4, alpha1=0.05/2):
+  """
+  plots error rate simulation
+
+  Parameters
+  ----------
+  sim_num : int
+    simulation number
+  mode : str
+    options for error rate "FDR" or "FNDR"
+  method : str
+    "BH" or "Adaptive"
+  shape : str
+    "ramp" or "ellipse"
+  shape_spec : dict
+    dictionary containing shape specs
+  c : list
+    list of thresholds
+  dim : int
+    dimension of the image (N, W, H)
+  ax : axes
+    subplot figure to use
+  c_marg : int
+    margin allowed for the threshold
+  tail : str
+    "one" or "two"
+  alpha : int
+    [0, 1] alpha level
+  alpha0 : int
+    [0, 1] alpha level for adaptive first stage
+  alpha1 : int
+    [0, 1] alpha level for adaptive second stage
+
+
+  Examples
+  --------
+  shapes = ["circular", "ellipse", "ramp"]
+  # 50*50
+  shape_specs_50 = shape_spec[0]
+  fig, axs = plt.subplots(len(shape_specs_50), 3, figsize=figsize)
+  for i in range(len(shape_specs_50)):
+      for j, shape in enumerate(shapes):
+          ax = axs[i, j]
+          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_50[i][j], c=c, dim=dim_50, ax=ax)
+          ax.set_title(f"{shape}, dim={dim_50}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
+          ax.set_xlabel("threshold")
+          ax.set_ylabel(str(mode))
+          if mode == "fdr":
+            ax.set_ylim([0, 0.02])
+          elif mode == "fndr":
+            ax.set_ylim([0,1])
+          ax.legend()
+  plt.show()
+
+  :Authors:
+    Howon Ryu <howonryu@ucsd.edu>
+  """
   tbl_mth1_BH = error_check_sim_table(sim_num=sim_num, temp="1", mode=mode, method="BH",
                                     shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=0.2,
                                     tail="two", alpha=0.05, alpha0=0.05/4, alpha1=0.05/2)
@@ -136,42 +192,63 @@ def error_check_plot_single(sim_num, mode, shape, shape_spec, c, dim, ax, c_marg
   #ax.plot(c, [alpha]*len(c), label=f"alpha={alpha}")
 
 
-def error_check_plot(sim_num, c, mode, shape_spec, figsize=(15, 10)):
+def error_check_plot(sim_num, c, mode, shape_spec, figsize=(15,10)):
+  """
+  combines error_check_plot_single to create a grid of simulations plots with different simulation settings
+
+  Parameters
+  ----------
+  sim_num : int
+    simulation number
+  c : list
+    list of thresholds
+  mode : str
+    options for error rate "FDR" or "FNDR"
+  shape_spec : dict
+    dictionary containing shape specs
+  figsize : tuple
+    figure size
+
+  Examples
+  --------
+  error_check_plot(sim_num=100, mode="fdr", c=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], shape_spec=shape_specs_sim, figsize=(23,30))
+
+  :Authors:
+    Howon Ryu <howonryu@ucsd.edu>
+  """
+
   shapes = ["circular", "ellipse", "ramp"]
   # 50*50
   shape_specs_50 = shape_spec[0]
   fig, axs = plt.subplots(len(shape_specs_50), 3, figsize=figsize)
   for i in range(len(shape_specs_50)):
-    for j, shape in enumerate(shapes):
-      ax = axs[i, j]
-      error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_50[i][j], c=c, dim=dim_50,
-                              ax=ax)
-      ax.set_title(
-        f"{shape}, dim={dim_50}, fwhm_noise={shape_specs_50[i][j]['fwhm_noise']}, fwhm_signal={shape_specs_50[i][j]['fwhm_signal']}")  # , std={ shape_specs_100[i][j]['std'] }
-      ax.set_xlabel("threshold")
-      ax.set_ylabel(str(mode))
-      if mode == "fdr":
-        ax.set_ylim([0, 0.02])
-      elif mode == "fndr":
-        ax.set_ylim([0, 1])
-      ax.legend()
+      for j, shape in enumerate(shapes):
+          ax = axs[i, j]
+          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_50[i][j], c=c, dim=dim_50, ax=ax)
+          ax.set_title(f"{shape}, dim={dim_50}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
+          ax.set_xlabel("threshold")
+          ax.set_ylabel(str(mode))
+          if mode == "fdr":
+            ax.set_ylim([0, 0.02])
+          elif mode == "fndr":
+            ax.set_ylim([0,1])
+          ax.legend()
   plt.show()
+
 
   # 100*100
   shape_specs_100 = shape_spec[1]
   fig, axs = plt.subplots(len(shape_specs_100), 3, figsize=figsize)
   for i in range(len(shape_specs_100)):
-    for j, shape in enumerate(shapes):
-      ax = axs[i, j]
-      error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_100[i][j], c=c,
-                              dim=dim_100, ax=ax)
-      ax.set_title(
-        f"{shape}, dim={dim_100}, fwhm_noise={shape_specs_50[i][j]['fwhm_noise']}, fwhm_signal={shape_specs_50[i][j]['fwhm_signal']}")  # , std={ shape_specs_100[i][j]['std'] }
-      ax.set_xlabel("threshold")
-      ax.set_ylabel(str(mode))
-      if mode == "fdr":
-        ax.set_ylim([0, 0.02])
-      elif mode == "fndr":
-        ax.set_ylim([0, 1])
-      ax.legend()
+      for j, shape in enumerate(shapes):
+          ax = axs[i, j]
+          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_100[i][j], c=c, dim=dim_100, ax=ax)
+          ax.set_title(f"{shape}, dim={dim_100}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
+          ax.set_xlabel("threshold")
+          ax.set_ylabel(str(mode))
+          if mode == "fdr":
+            ax.set_ylim([0, 0.02])
+          elif mode == "fndr":
+            ax.set_ylim([0,1])
+          ax.legend()
   plt.show()
