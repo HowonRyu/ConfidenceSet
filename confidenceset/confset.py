@@ -229,17 +229,8 @@ def fdr_cope_temp1(data, threshold, method, alpha=0.05,
 
   Example
   -------
-  nsub = 50
-  data = numpy.random.randn(nsub, 100, 100) + 2
-  lower, upper = fdr_cope(data, threshold=2, method="BH", alpha=0.05, tail="two)
-  plt.imshow(lower)
-  plt.imshow(upper)
-
-  nsub = 50
-  data = numpy.random.randn(nsub, 100, 100) + 2
-  lower, upper = fdr_cope(data, threshold=2, method="AD", alpha0=0.05/4, alpha1 = 0.05/2, k=2 tail="two")
-  plt.imshow(lower)
-  plt.imshow(upper)
+  spec_cir_100_smth = {'a':0.5, 'b':0.5, 'std':7, 'mag':3, 'fwhm_noise':3, 'fwhm_signal':10}
+  outer_set, inner_set, Achat, plot_add, n_rej = fdr_cope_temp1(data=circular_100_smth, method=method, tail="one", alpha=0.05, threshold=3)
 
   :Authors:
     Samuel Davenport <sdavenport@health.ucsd.edu>
@@ -319,17 +310,8 @@ def fdr_cope_temp2(data, threshold, method, alpha=0.05,
 
   Example
   -------
-  nsub = 50
-  data = numpy.random.randn(nsub, 100, 100) + 2
-  lower, upper = fdr_cope(data, threshold=2, method="BH", alpha=0.05, tail="two)
-  plt.imshow(lower)
-  plt.imshow(upper)
-
-  nsub = 50
-  data = numpy.random.randn(nsub, 100, 100) + 2
-  lower, upper = fdr_cope(data, threshold=2, method="AD", alpha0=0.05/4, alpha1 = 0.05/2, k=2 tail="two")
-  plt.imshow(lower)
-  plt.imshow(upper)
+  spec_cir_100_smth = {'a':0.5, 'b':0.5, 'std':7, 'mag':3, 'fwhm_noise':3, 'fwhm_signal':10}
+  outer_set, inner_set, Achat, plot_add, n_rej = fdr_cope_temp1(data=circular_100_smth, method=method, tail="one", alpha=0.05, threshold=3)
 
   :Authors:
     Samuel Davenport <sdavenport@health.ucsd.edu>
@@ -408,7 +390,7 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
   -------
   nsub = 50
   data = numpy.random.randn(nsub, 100, 100) + 2
-  lower, upper = fdr_cope(data, threshold=2, method="BH", alpha=0.05, tail="two)
+  lower, upper = fdr_cope(data, threshold=2, method="BH", alpha=0.05, tail="two")
   plt.imshow(lower)
   plt.imshow(upper)
 
