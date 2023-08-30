@@ -5,6 +5,8 @@ from scipy.ndimage import gaussian_filter
 import matplotlib.colors as colors
 from confset import *
 from random_field_generator import *
+import sys
+sys.path.insert(1,'../confidenceset/')
 from test import *
 
 

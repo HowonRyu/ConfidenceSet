@@ -1,5 +1,7 @@
 import numpy as np
-
+import sys
+sys.path.insert(1,'../confidenceset/')
+from random_field_generatorsimport *
 
 def fdr_BH(pvalues, alpha=0.05):
     """
