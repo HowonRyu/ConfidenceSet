@@ -784,3 +784,28 @@ def error_check_sim(sim_num, mode, method, c, c_marg=0.2, std=5, tail="two", alp
   ERR2.update({n: np.round(np.nanmean(ERR2[n], axis=1), 4) for n in ERR2_key_calc})
 
   return (ERR, ERR2)
+
+
+
+
+def table_sim():
+  simnum = 500
+  cmarg = 0.1
+  std=  5
+  c = (0.5, 2, 3)
+  BH50_fdr, BH100_fdr = error_check_sim_temp(temp="1",mode = "fdr", sim_num=simnum, method="BH", c=c, c_marg=cmarg, std=std, alpha=0.05, alpha0=0.05/4, alpha1=0.05/2)
+  AD50_fdr, AD100_fdr = error_check_sim_temp(temp="1", mode = "fdr", sim_num=simnum, method="adaptive", c=c, c_marg=cmarg, std=std, alpha=0.05, alpha0=0.05/4, alpha1=0.05/2)
+
+  print("------------------------------------------------------------------------- BH FDR ----------------------------------------------------------------------------")
+  print("----------------------------------------------------------------------imagesize:(50*50)----------------------------------------------------------------------")
+  print(tabulate(BH50_fdr, headers='keys'))
+  print()
+  print("----------------------------------------------------------------------imagesize:(100*100)--------------------------------------------------------------------")
+  print(tabulate(BH100_fdr, headers='keys'))
+
+  print("----------------------------------------------------------------------- Adaptive FDR ------------------------------------------------------------------------")
+  print("----------------------------------------------------------------------imagesize:(50*50)----------------------------------------------------------------------")
+  print(tabulate(AD50_fdr, headers='keys'))
+  print()
+  print("----------------------------------------------------------------------imagesize:(100*100)--------------------------------------------------------------------")
+  print(tabulate(AD100_fdr, headers='keys'))
