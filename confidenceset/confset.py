@@ -434,6 +434,3 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
     outer_set = None
     plot_add = inner_set + Achat
     return (outer_set, inner_set, Achat, plot_add, inner_n_rej)
-
-
-    inner_rejection_ind

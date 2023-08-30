@@ -149,7 +149,7 @@ def error_check_temp(temp, mode, dim, threshold, method, shape, std=None, shape_
         ERR2 = numer2/denom2
       return( (ERR1+ERR2)/2 )
 
-  def error_check_sim_table(sim_num, temp, mode, method, shape, shape_spec, c, dim, c_marg=0.2, tail="two", alpha=0.05,
+def error_check_sim_table(sim_num, temp, mode, method, shape, shape_spec, c, dim, c_marg=0.2, tail="two", alpha=0.05,
                             alpha0=0.05 / 4, alpha1=0.05 / 2):
     """
     produces table for FDR, and FNDR simulation result
