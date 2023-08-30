@@ -1,9 +1,8 @@
 import numpy as np
 import sys
-sys.path.insert(1,'../confidenceset/')
-from confset import *
-from random_field_generator import *
-from plot import *
+from .confset import *
+from .random_field_generator import *
+from .plot import *
 ### FDR and power tests
 
 
