@@ -22,7 +22,7 @@ def error_check_temp(temp, mode, dim, threshold, method, shape, shape_spec=None,
   threshold : int
     threshold to be used for sub-setting
   method : str
-    "BH" or "Adaptive"
+    "BH" or "adaptive"
   shape : str
     "ramp" or "ellipse"
   shape_spec : dict

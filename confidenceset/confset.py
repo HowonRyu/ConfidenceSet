@@ -253,7 +253,7 @@ def fdr_cope_temp1(data, threshold, method, alpha=0.05,
     elif method == "BH":
       inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha)
       #outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
-    n_rej = [inner_n_rej]
+    n_rej = inner_n_rej
     outer_set = None
     inner_set = Achat * inner_rejection_ind
     plot_add =  inner_set + Achat
@@ -354,8 +354,6 @@ def fdr_cope_temp2(data, threshold, method, alpha=0.05,
     inner_set = Achat * inner_rejection_ind
     plot_add = outer_set + inner_set + Achat
 
-
-
   return(outer_set, inner_set, Achat, plot_add, n_rej)
 
 def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
@@ -409,9 +407,6 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
   nsubj = data_dim[0]
   Achat = data_tstat >= 0
   Achat_C = data_tstat < 0
-  n_rej = 0
-
-
 
   if tail == "two":
     pvals = 2 * (1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1))
@@ -422,20 +417,23 @@ def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
       rejection_ind, _, n_rej = fdr_BH(pvals, alpha)
     outer_set = 1 - Achat_C * rejection_ind
     inner_set = Achat * rejection_ind
+    plot_add = outer_set + inner_set + Achat
+    return (outer_set, inner_set, Achat, plot_add, n_rej)
 
   if tail == "one":
     inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
+    #outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
     rejection_ind = np.full(np.prod(inner_pvals.shape), 0)
     if method == "adaptive":
       inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-      outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
+      #outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
     if method == "BH":
       inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha)
-      outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
-    n_rej = [inner_n_rej, outer_n_rej]
-    outer_set = 1 - Achat_C * outer_rejection_ind
+      #outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
     inner_set = Achat * inner_rejection_ind
+    outer_set = None
+    plot_add = inner_set + Achat
+    return (outer_set, inner_set, Achat, plot_add, inner_n_rej)
 
-  plot_add = outer_set + inner_set + Achat
-  return(outer_set, inner_set, Achat, plot_add, n_rej)
+
+    inner_rejection_ind
