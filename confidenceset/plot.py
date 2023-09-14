@@ -8,30 +8,31 @@ from .test import *
 
 
 # Confidence Set Plotting
-def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, mag = 3, fontsize = 25, figsize=(30, 20), alpha=0.05):
+def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, fwhm_noise=3, fwhm_signal=20, mag = 3, fontsize = 25, figsize=(30, 20), alpha=0.05):
+
   """
   plots FDR controlling confidence sets for six different random fields
 
   Parameters
   ----------
   threshold : int
-    threshold c
+      threshold c
   temp : str
-    options for creating confidence set "0", "1" or "2"
+      options for creating confidence set "0", "1" or "2"
   method : str
-    "BH" or "adaptive"
+      "BH" or "adaptive"
   r : int
-    radii of ellipses
+      radii of ellipses
   std : int
-    standard deviation for the noise field N(0, std^2)
+      standard deviation for the noise field N(0, std^2)
   mag : int
-    magnitude of the signal
+      magnitude of the signal
   fontsize : int
-    font size for figure
+  f   ont size for figure
   figsize : tuple
-    figure size
+      figure size
   alpha : int
-    [0, 1] alpha level
+  [0, 1] alpha level
 
   Examples
   --------
@@ -52,11 +53,11 @@ def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, mag = 3, fontsiz
   cmap22 = colors.ListedColormap(['black', 'yellow'])
   cmap3 = colors.ListedColormap(['none', 'red'])
   dim_100 = (80,100,100)
-  f100 = 10*2
 
-  spec_cir_100_smth = {'a':r, 'b':r, 'std':std, 'mag':mag, 'fwhm_noise':3, 'fwhm_signal':f100}
-  spec_elp_100_smth = {'a':r*2, 'b':r*0.5, 'std':std,'mag':mag, 'fwhm_noise':3, 'fwhm_signal':f100}
-  spec_ramp_100_smth = {'direction':1, 'std':std, 'mag':(0,mag), 'fwhm_noise':3}
+
+  spec_cir_100_smth = {'a':r, 'b':r, 'std':std, 'mag':mag, 'fwhm_noise':fwhm_noise, 'fwhm_signal':fwhm_signal}
+  spec_elp_100_smth = {'a':r*2, 'b':r*0.5, 'std':std,'mag':mag, 'fwhm_noise':fwhm_noise, 'fwhm_signal':fwhm_signal}
+  spec_ramp_100_smth = {'direction':1, 'std':std, 'mag':(0,mag), 'fwhm_noise':fwhm_noise}
 
   circular_100_smth, _ = gen_2D(dim_100, shape="ellipse", shape_spec=spec_cir_100_smth)
   ellipse_100_smth, _ = gen_2D(dim_100, shape="ellipse", shape_spec=spec_elp_100_smth)
@@ -64,35 +65,38 @@ def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, mag = 3, fontsiz
 
 
   cmap = colors.ListedColormap(['black', 'blue', 'yellow', 'red'])
-  fig, axs = plt.subplots(2,3, figsize=figsize)
+  fig, axs = plt.subplots(1,3, figsize=figsize)
 
-  im = axs[0, 0].imshow(fdr_cope_function(data=circular_100_smth, method=method, tail="one", alpha=alpha,threshold=threshold)[2], cmap=cmap22)
-  im = axs[0, 0].imshow(fdr_cope_function(data=circular_100_smth, method=method, tail="one", alpha=alpha,threshold=threshold)[1], cmap=cmap3)
-  axs[0, 0].set_title("circle", fontsize = fontsize)
+  im = axs[0].imshow(fdr_cope_function(data=circular_100_smth, method=method, tail="two",  alpha=alpha,  threshold=threshold)[0], cmap=cmap1)
+  im = axs[0].imshow(fdr_cope_function(data=circular_100_smth, method=method, tail="two", alpha=alpha,threshold=threshold)[2], cmap=cmap2)
+  im = axs[0].imshow(fdr_cope_function(data=circular_100_smth, method=method, tail="two", alpha=alpha,threshold=threshold)[1], cmap=cmap3)
+  axs[0].set_title("circle", fontsize = fontsize)
 
-  im = axs[0, 1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, tail="one", alpha=alpha,threshold=threshold)[2], cmap=cmap22)
-  im = axs[0, 1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, tail="one", alpha=alpha,threshold=threshold)[1], cmap=cmap3)
-  axs[0, 1].set_title("ellipse", fontsize = fontsize)
+  im = axs[1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, tail="two", alpha=alpha, threshold=threshold)[0], cmap=cmap1)
+  im = axs[1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, tail="two", alpha=alpha,threshold=threshold)[2], cmap=cmap2)
+  im = axs[1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, tail="two", alpha=alpha,threshold=threshold)[1], cmap=cmap3)
+  axs[1].set_title("ellipse", fontsize = fontsize)
 
-  im = axs[0, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, tail="one", alpha=alpha, threshold=threshold)[2], cmap=cmap22)
-  im = axs[0, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, tail="one", alpha=alpha, threshold=threshold)[1], cmap=cmap3)
-  axs[0, 2].set_title("ramp", fontsize = fontsize)
+  im = axs[2].imshow(fdr_cope_function(data=ramp_100_smth, tail="two", method=method, alpha=alpha, threshold=threshold)[0], cmap=cmap1)
+  im = axs[2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, tail="two", alpha=alpha, threshold=threshold)[2], cmap=cmap2)
+  im = axs[2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, tail="two", alpha=alpha, threshold=threshold)[1], cmap=cmap3)
+  axs[2].set_title("ramp", fontsize = fontsize)
 
-  im = axs[1, 0].imshow(fdr_cope_function(data=circular_100_smth, method=method, alpha=alpha,  threshold=threshold)[0], cmap=cmap1)
-  im = axs[1, 0].imshow(fdr_cope_function(data=circular_100_smth, method=method, alpha=alpha, threshold=threshold)[2], cmap=cmap2)
-  im = axs[1, 0].imshow(fdr_cope_function(data=circular_100_smth, method=method, alpha=alpha, threshold=threshold)[1], cmap=cmap3)
-  axs[1, 0].set_title("circle(smoothed)", fontsize = fontsize)
+  # im = axs[1, 0].imshow(fdr_cope_function(data=circular_100_smth, method=method, alpha=alpha,  threshold=threshold)[0], cmap=cmap1)
+  # im = axs[1, 0].imshow(fdr_cope_function(data=circular_100_smth, method=method, alpha=alpha, threshold=threshold)[2], cmap=cmap2)
+  # im = axs[1, 0].imshow(fdr_cope_function(data=circular_100_smth, method=method, alpha=alpha, threshold=threshold)[1], cmap=cmap3)
+  # axs[1, 0].set_title("circle(smoothed)", fontsize = fontsize)
 
 
-  im = axs[1, 1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, alpha=alpha, threshold=threshold)[0], cmap=cmap1)
-  im = axs[1, 1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, alpha=alpha, threshold=threshold)[2], cmap=cmap2)
-  im = axs[1, 1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, alpha=alpha, threshold=threshold)[1], cmap=cmap3)
-  axs[1, 1].set_title("ellipse(smoothed)", fontsize = fontsize)
+  # im = axs[1, 1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, alpha=alpha, threshold=threshold)[0], cmap=cmap1)
+  # im = axs[1, 1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, alpha=alpha, threshold=threshold)[2], cmap=cmap2)
+  # im = axs[1, 1].imshow(fdr_cope_function(data=ellipse_100_smth, method=method, alpha=alpha, threshold=threshold)[1], cmap=cmap3)
+  # axs[1, 1].set_title("ellipse(smoothed)", fontsize = fontsize)
 
-  im = axs[1, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, alpha=alpha, threshold=threshold)[0], cmap=cmap1)
-  im = axs[1, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, alpha=alpha, threshold=threshold)[2], cmap=cmap2)
-  im = axs[1, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, alpha=alpha, threshold=threshold)[1], cmap=cmap3)
-  axs[1, 2].set_title("ramp(smoothed)", fontsize = fontsize)
+  # im = axs[1, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, alpha=alpha, threshold=threshold)[0], cmap=cmap1)
+  # im = axs[1, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, alpha=alpha, threshold=threshold)[2], cmap=cmap2)
+  # im = axs[1, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, alpha=alpha, threshold=threshold)[1], cmap=cmap3)
+  # axs[1, 2].set_title("ramp(smoothed)", fontsize = fontsize)
 
   plt.suptitle(f"method={method}, confset method={temp}, alpha={alpha}")
   plt.show()
