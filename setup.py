@@ -8,6 +8,7 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
+        'matplotlib'
     ],
     version = '0.0.2',
     license='MIT',
