@@ -344,11 +344,11 @@ def fdr_cope_temp2(data, threshold, method, alpha=0.05,
     outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
     rejection_ind = np.full(np.prod(inner_pvals.shape), 0)
     if method == "adaptive":
-      inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0/2, alpha1=alpha1/2)
-      outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0/2, alpha1=alpha1/2)
+      inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
+      outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
     elif method == "BH":
-      inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha/2)
-      outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha/2)
+      inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha)
+      outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
     n_rej = [inner_n_rej, outer_n_rej]
     outer_set = 1 - Achat_C * outer_rejection_ind
     inner_set = Achat * inner_rejection_ind

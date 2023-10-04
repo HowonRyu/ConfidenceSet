@@ -60,7 +60,7 @@ def error_check_temp(temp, mode, dim, threshold, method, shape, std=None, shape_
   elif temp == "1":
     lower, upper, Achat, all_sets, n_rej = fdr_cope_temp1(data, method=method, threshold=threshold, alpha=alpha, tail=tail)
   elif temp == "2":
-    lower, upper, Achat, all_sets, n_rej = fdr_cope_temp2(data, method=method, threshold=threshold, alpha=alpha/2, tail=tail)
+    lower, upper, Achat, all_sets, n_rej = fdr_cope_temp2(data, method=method, threshold=threshold, alpha=alpha, tail=tail)
 
   if n_rej == 0:
     ERR = 0
