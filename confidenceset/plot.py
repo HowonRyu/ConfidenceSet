@@ -167,7 +167,7 @@ def error_check_plot_single(sim_num, mode, shape, shape_spec, c, dim, ax, c_marg
                                      alpha=alpha, tail=tail)
   tbl_mth2_BH = error_check_sim_table(sim_num=sim_num, temp="2", mode=mode, method="BH",
                                     shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
-                                    talpha=alpha, tail=tail)
+                                    alpha=alpha, tail=tail)
   tbl_mth1_AD = error_check_sim_table(sim_num=sim_num, temp="1", mode=mode, method="adaptive",
                                     shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
                                      alpha=alpha, alpha0=alpha0, alpha1=alpha1, tail=tail)
