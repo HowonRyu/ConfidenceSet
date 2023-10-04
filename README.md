@@ -1,2 +1,2 @@
 # ConfidenceSet
-Python toolbox functions for FDR controlled confidence sets
+Python toolbox for FDR controlled confidence sets
