@@ -98,7 +98,7 @@ def conf_plot_agg_temp(threshold, temp, method, seed=None, r=0.5, std = 5, fwhm_
   # im = axs[1, 2].imshow(fdr_cope_function(data=ramp_100_smth, method=method, alpha=alpha, threshold=threshold)[1], cmap=cmap3)
   # axs[1, 2].set_title("ramp(smoothed)", fontsize = fontsize)
 
-  plt.suptitle(f"method={method}, confset method={temp}, alpha={alpha}")
+  plt.suptitle(f"testing method={method}, confset method={temp}, alpha={alpha}")
   plt.show()
 
 
