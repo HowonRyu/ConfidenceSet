@@ -49,7 +49,7 @@ def gen_spec(fwhm_sig=10, fwhm_noise=5, std=5, mag=4, r=0.5):
 
 
 
-def gen_2D(dim, shape, shape_spec, truncate=3):
+def gen_2D(dim, shape, shape_spec, seed=None, truncate=3):
   """
   generates 2D image
 
@@ -86,6 +86,7 @@ def gen_2D(dim, shape, shape_spec, truncate=3):
     mu = ellipse_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
 
   # noise
+  np.random.seed(seed)
   noise = np.random.randn(*dim) * std
   sigma_noise = fwhm_noise / np.sqrt(8 * np.log(2))
 

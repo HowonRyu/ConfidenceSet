@@ -8,7 +8,7 @@ from .test import *
 
 
 # Confidence Set Plotting
-def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, fwhm_noise=3, fwhm_signal=20, mag = 3, fontsize = 25, figsize=(30, 20), alpha=0.05):
+def conf_plot_agg_temp(threshold, temp, method, seed=None, r=0.5, std = 5, fwhm_noise=3, fwhm_signal=20, mag = 3, fontsize = 25, figsize=(30, 20), alpha=0.05):
 
   """
   plots FDR controlling confidence sets for six different random fields
@@ -59,9 +59,9 @@ def conf_plot_agg_temp(threshold, temp, method, r=0.5, std = 5, fwhm_noise=3, fw
   spec_elp_100_smth = {'a':r*2, 'b':r*0.5, 'std':std,'mag':mag, 'fwhm_noise':fwhm_noise, 'fwhm_signal':fwhm_signal}
   spec_ramp_100_smth = {'direction':1, 'std':std, 'mag':(0,mag), 'fwhm_noise':fwhm_noise}
 
-  circular_100_smth, _ = gen_2D(dim_100, shape="ellipse", shape_spec=spec_cir_100_smth)
-  ellipse_100_smth, _ = gen_2D(dim_100, shape="ellipse", shape_spec=spec_elp_100_smth)
-  ramp_100_smth, _ = gen_2D(dim_100, shape="ramp", shape_spec=spec_ramp_100_smth)
+  circular_100_smth, _ = gen_2D(dim_100, seed=seed, shape="ellipse", shape_spec=spec_cir_100_smth)
+  ellipse_100_smth, _ = gen_2D(dim_100, seed=seed, shape="ellipse", shape_spec=spec_elp_100_smth)
+  ramp_100_smth, _ = gen_2D(dim_100, seed=seed, shape="ramp", shape_spec=spec_ramp_100_smth)
 
 
   cmap = colors.ListedColormap(['black', 'blue', 'yellow', 'red'])
