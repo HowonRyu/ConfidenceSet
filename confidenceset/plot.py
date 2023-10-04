@@ -163,17 +163,17 @@ def error_check_plot_single(sim_num, mode, shape, shape_spec, c, dim, ax, c_marg
     Howon Ryu <howonryu@ucsd.edu>
   """
   tbl_mth1_BH = error_check_sim_table(sim_num=sim_num, temp="1", mode=mode, method="BH",
-                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=0.2,
-                                    tail="two", alpha=0.05, alpha0=0.05/4, alpha1=0.05/2)
+                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
+                                    tail="two", alpha=alpha, tail=tail)
   tbl_mth2_BH = error_check_sim_table(sim_num=sim_num, temp="2", mode=mode, method="BH",
-                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=0.2,
-                                    tail="two", alpha=0.05, alpha0=0.05/4, alpha1=0.05/2)
+                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
+                                    tail="two", alpha=alpha, tail=tail)
   tbl_mth1_AD = error_check_sim_table(sim_num=sim_num, temp="1", mode=mode, method="adaptive",
-                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=0.2,
-                                    tail="two", alpha=0.05, alpha0=0.05/4, alpha1=0.05/2)
+                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
+                                    tail="two", alpha=alpha, alpha0=alpha0, alpha1=alpha1, tail=tail)
   tbl_mth2_AD = error_check_sim_table(sim_num=sim_num, temp="2", mode=mode, method="adaptive",
-                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=0.2,
-                                    tail="two", alpha=0.05, alpha0=0.05/4, alpha1=0.05/2)
+                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
+                                    tail="two", alpha=alpha, alpha0=alpha0, alpha1=alpha1, tail=tail)
   method1_BH = np.mean(tbl_mth1_BH, axis=1)
   method2_BH = np.mean(tbl_mth2_BH, axis=1)
   method1_adaptive = np.mean(tbl_mth1_AD, axis=1)
@@ -194,7 +194,7 @@ def error_check_plot_single(sim_num, mode, shape, shape_spec, c, dim, ax, c_marg
   #ax.plot(c, [alpha]*len(c), label=f"alpha={alpha}")
 
 
-def error_check_plot(sim_num, c, mode, shape_spec, figsize=(15,10)):
+def error_check_plot(sim_num, c, mode, shape_spec, c_marg=0.2, tail="two", alpha=0.05, alpha0=0.05/4, alpha1=0.05/2, figsize=(15,10)):
   """
   combines error_check_plot_single to create a grid of simulations plots with different simulation settings
 
@@ -228,7 +228,8 @@ def error_check_plot(sim_num, c, mode, shape_spec, figsize=(15,10)):
   for i in range(len(shape_specs_50)):
       for j, shape in enumerate(shapes):
           ax = axs[i, j]
-          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_50[i][j], c=c, dim=dim_50, ax=ax)
+          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape,  shape_spec=shape_specs_50[i][j], c=c,
+                                  dim=dim_50, ax=ax, c_marg=c_marg, tail=tail, alpha=alpha, alpha0=alpha0, alpha1=alpha1)
           ax.set_title(f"{shape}, dim={dim_50}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
           ax.set_xlabel("threshold")
           ax.set_ylabel(str(mode))
@@ -246,7 +247,8 @@ def error_check_plot(sim_num, c, mode, shape_spec, figsize=(15,10)):
   for i in range(len(shape_specs_100)):
       for j, shape in enumerate(shapes):
           ax = axs[i, j]
-          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_100[i][j], c=c, dim=dim_100, ax=ax)
+          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_100[i][j], c=c,
+                                  dim=dim_100, ax=ax, c_marg=c_marg, tail=tail, alpha=alpha, alpha0=alpha0, alpha1=alpha1)
           ax.set_title(f"{shape}, dim={dim_100}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
           ax.set_xlabel("threshold")
           ax.set_ylabel(str(mode))
