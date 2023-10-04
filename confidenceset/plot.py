@@ -164,16 +164,16 @@ def error_check_plot_single(sim_num, mode, shape, shape_spec, c, dim, ax, c_marg
   """
   tbl_mth1_BH = error_check_sim_table(sim_num=sim_num, temp="1", mode=mode, method="BH",
                                     shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
-                                    tail="two", alpha=alpha, tail=tail)
+                                     alpha=alpha, tail=tail)
   tbl_mth2_BH = error_check_sim_table(sim_num=sim_num, temp="2", mode=mode, method="BH",
                                     shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
-                                    tail="two", alpha=alpha, tail=tail)
+                                    talpha=alpha, tail=tail)
   tbl_mth1_AD = error_check_sim_table(sim_num=sim_num, temp="1", mode=mode, method="adaptive",
                                     shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
-                                    tail="two", alpha=alpha, alpha0=alpha0, alpha1=alpha1, tail=tail)
+                                     alpha=alpha, alpha0=alpha0, alpha1=alpha1, tail=tail)
   tbl_mth2_AD = error_check_sim_table(sim_num=sim_num, temp="2", mode=mode, method="adaptive",
                                     shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
-                                    tail="two", alpha=alpha, alpha0=alpha0, alpha1=alpha1, tail=tail)
+                                     alpha=alpha, alpha0=alpha0, alpha1=alpha1, tail=tail)
   method1_BH = np.mean(tbl_mth1_BH, axis=1)
   method2_BH = np.mean(tbl_mth2_BH, axis=1)
   method1_adaptive = np.mean(tbl_mth1_AD, axis=1)
