@@ -148,7 +148,7 @@ def error_check(mode, dim, threshold, method, shape, std=None, shape_spec=None, 
         ERR = nom / denom
       return ERR
 
-  def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_marg=0.2, alpha=0.05):
+def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_marg=0.2, alpha=0.05):
     """
     produces table for FDR, and FNDR simulation result
 
