@@ -205,10 +205,10 @@ def error_check_plot(sim_num, c, mode, shape_spec, c_marg=0.2, tail="two", alpha
           ax.set_title(f"{shape}, dim={dim_50}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
           ax.set_xlabel("threshold")
           ax.set_ylabel(str(mode))
-          #if mode == "fdr":
-          #  ax.set_ylim([0, 0.02])
-          #elif mode == "fndr":
-          #  ax.set_ylim([0,1])
+          if mode == "FDR":
+            ax.set_ylim([0, 0.07])
+          elif mode == "FNDR":
+            ax.set_ylim([0,1])
           ax.legend()
   plt.show()
 
