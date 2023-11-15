@@ -16,7 +16,7 @@ def fdr_BH(pvalues, alpha=0.05):
     Returns
     -------
     rejection_ind : Boolean
-      shows whether or not the voxel is rejected
+      shows whether the voxel is rejected
     rejection_locs : int
       locations of the voxels that are rejected (flattened)
     nrejections : int
@@ -29,7 +29,7 @@ def fdr_BH(pvalues, alpha=0.05):
     data_dim = data.shape
     nsubj = data_dim[0]
     pvals = 2*(1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1));
-    rejection_ind, _, _ = fdr_BH(pvals, alpha)
+    rejection_ind, rejection_locs, nrejections = fdr_BH(pvals, alpha=0.05)
 
     :Authors:
       Samuel Davenport <sdavenport@health.ucsd.edu>
@@ -90,7 +90,7 @@ def mvtstat(data):
     std_dev = np.sqrt(est_var)
 
     tstat = (np.sqrt(n_subj) * xbar) / std_dev
-    cohensd = xbar / std_dev
+    #cohensd = xbar / std_dev
 
     return (tstat)
 
@@ -113,7 +113,7 @@ def fdr_adaptive(pvalues, k=2, alpha0=0.05 / 4, alpha1=0.05 / 2):
     Returns
     -------
     rejection_ind : Boolean
-      shows whether or not the voxel is rejected
+      shows whether the voxel is rejected
     rejection_locs : int
       locations of the voxels that are rejected (flattened)
     nrejections : int
@@ -199,238 +199,95 @@ def F_kap(x, k):
     return (y)
 
 
-def fdr_cope_temp1(data, threshold, method, alpha=0.05,
-             k=2, tail = "two", alpha0=0.05/4, alpha1=0.05/2):
-  """
-  sub-setting the confidence set controlling for FDR
+def fdr_confset(data, threshold, method="separate", alpha=0.05,
+             k=2, alpha0=0.05 / 4, alpha1=0.05 / 2):
+    """
+    sub-setting the confidence set controlling for FDR
 
-  Parameters
-  ----------
-  data : int
-    array of voxels
-  threshold : int
-    threshold to be used for sub-setting
-  alpha : int
-    alpha level
-
-
-  Returns
-  -------
-  lower_set : array(Boolean)
-    voxels in the lower confidence set
-  upper_set : array(Boolean)
-    voxels in the upper confidence set
-  Achat : Boolean
-    voxels in the Ac_hat area
-  plot_add : array(int)
-    area representing lower_set + upper_set + Achat
-  n_rej : int or list
-    number of voxels rejected by the procedure
-
-  Example
-  -------
-  spec_cir_100_smth = {'a':0.5, 'b':0.5, 'std':7, 'mag':3, 'fwhm_noise':3, 'fwhm_signal':10}
-  outer_set, inner_set, Achat, plot_add, n_rej = fdr_cope_temp1(data=circular_100_smth, method=method, tail="one", alpha=0.05, threshold=3)
-
-  :Authors:
-    Samuel Davenport <sdavenport@health.ucsd.edu>
-    Howon Ryu <howonryu@ucsd.edu>
-  """
-  data_tstat = mvtstat(data - threshold)
-  data_dim = data.shape
-  nsubj = data_dim[0]
-  Achat = data_tstat >= 0
-  Achat_C = data_tstat < 0
-  n_rej = 0
-
-  if tail == "one":
-    inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    #outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    rejection_ind = np.full(np.prod(inner_pvals.shape), 0)
-    if method == "adaptive":
-      inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-      #outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-    elif method == "BH":
-      inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha)
-      #outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
-    n_rej = inner_n_rej
-    outer_set = None
-    inner_set = Achat * inner_rejection_ind
-    plot_add =  inner_set + Achat
-
-  elif tail == "two":
-    pvals_upper = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    pvals_lower = 1 - pvals_upper
-    pvals = np.concatenate((pvals_upper, pvals_lower))
-
-    rejection_ind = np.full(len(pvals.shape), 0)
-    if method == "adaptive":
-      rejection_ind, _, n_rej = fdr_adaptive(pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-    elif method == "BH":
-      rejection_ind, _, n_rej = fdr_BH(pvals, alpha)
-
-    rejection_ind_upper, rejection_ind_lower = np.array_split(rejection_ind, 2)
-
-    outer_set = 1 - Achat_C * rejection_ind_lower
-    inner_set = Achat * rejection_ind_upper
-    plot_add = outer_set + inner_set + Achat
+    Parameters
+    ----------
+    data : int
+      array of voxels
+    method : str
+      either "separate" or "joint"
+    threshold : int
+      threshold to be used for sub-setting
+    alpha : int
+      alpha level
+    k : int
+      kappa level for the adaptive procedure
+    alpha0 : int
+      alpha0 level for the adaptive procedure
+    alpha1 : int
+      alpha1 level for the adaptive procedure
 
 
-  return(outer_set, inner_set, Achat, plot_add, n_rej)
+    Returns
+    -------
+    lower_set : array(Boolean)
+      voxels in the lower confidence set
+    upper_set : array(Boolean)
+      voxels in the upper confidence set
+    Achat : Boolean
+      voxels in the Ac_hat area
+    plot_add : array(int)
+      area representing lower_set + upper_set + Achat
+    n_rej: list
+      number of voxels rejected by the procedure for lower and upper sets or both
 
+    Example
+    -------
+    nsub = 50
+    data = numpy.random.randn(nsub, 100, 100) + 2
+    lower, upper, _, _, _ = fdr_cope(data, threshold=2, method="separate", alpha=0.05, tail="two")
+    plt.imshow(lower)
+    plt.imshow(upper)
 
+    :Authors:
+      Samuel Davenport <sdavenport@health.ucsd.edu>
+      Howon Ryu <howonryu@ucsd.edu>
+    """
 
-def fdr_cope_temp2(data, threshold, method, alpha=0.05,
-             k=2, tail="two", alpha0=0.05/4, alpha1=0.05/2):
-  """
-  sub-setting the confidence set controlling for FDR
+    data_tstat = mvtstat(data - threshold)
+    data_dim = data.shape
+    nsubj = data_dim[0]
+    Achat = data_tstat > 0
+    # Achat_C = data_tstat <= 0
+    # Acbarhat = data_tstat >= 0
+    # Acbarhat_C = data_tstat < 0
+    upper_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
+    lower_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
 
-  Parameters
-  ----------
-  data : int
-    array of voxels
-  threshold : int
-    threshold to be used for sub-setting
-  alpha : int
-    alpha level
+    if method == "separate":
+        # upper set
+        upper_rej_ind, _, upper_n_rej = fdr_BH(upper_pvals, alpha=alpha)
+        upper_set = upper_rej_ind
+        # upper_set = Achat * upper_rejection_ind
 
+        # lower set
+        lower_rej_ind, _, lower_n_rej = fdr_adaptive(lower_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
+        lower_set = 1 - lower_rej_ind
+        # lower_set = 1 - (Acbarhat_C * lower_rejection_ind)
 
-  Returns
-  -------
-  lower_set : array(Boolean)
-    voxels in the lower confidence set
-  upper_set : array(Boolean)
-    voxels in the upper confidence set
-  Achat : Boolean
-    voxels in the Ac_hat area
-  plot_add : array(int)
-    area representing lower_set + upper_set + Achat
-  n_rej : int or list
-    number of voxels rejected by the procedure
+        n_rej = [lower_n_rej, upper_n_rej]
 
-  Example
-  -------
-  spec_cir_100_smth = {'a':0.5, 'b':0.5, 'std':7, 'mag':3, 'fwhm_noise':3, 'fwhm_signal':10}
-  outer_set, inner_set, Achat, plot_add, n_rej = fdr_cope_temp1(data=circular_100_smth, method=method, tail="one", alpha=0.05, threshold=3)
+        plot_add = upper_set + lower_set + Achat
+        return lower_set, upper_set, Achat, plot_add, n_rej
 
-  :Authors:
-    Samuel Davenport <sdavenport@health.ucsd.edu>
-    Howon Ryu <howonryu@ucsd.edu>
-  """
-  data_tstat = mvtstat(data - threshold)
-  data_dim = data.shape
-  nsubj = data_dim[0]
-  Achat = data_tstat >= 0
-  Achat_C = data_tstat < 0
-  n_rej = 0
+    if method == "joint":
+        pvals = np.concatenate((upper_pvals, lower_pvals))
+        rejection_ind = np.full(np.prod(pvals.shape), 0)
+        rejection_ind, _, n_rej = fdr_BH(pvals, alpha)
+        upper_rej_ind, lower_rej_ind = np.array_split(rejection_ind, 2)
 
-  if tail == "one":
-    inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    #outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    rejection_ind = np.full(np.prod(inner_pvals.shape), 0)
-    if method == "adaptive":
-      inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-      #outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-    elif method == "BH":
-      inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha)
-      #outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
-    n_rej = [inner_n_rej]
-    outer_set = None
-    inner_set = Achat * inner_rejection_ind
-    plot_add =  inner_set + Achat
+        # upper set
+        upper_set = upper_rej_ind
 
-  elif tail == "two":
-    inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    rejection_ind = np.full(np.prod(inner_pvals.shape), 0)
-    if method == "adaptive":
-      inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-      outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-    elif method == "BH":
-      inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha)
-      outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
-    n_rej = [inner_n_rej, outer_n_rej]
-    outer_set = 1 - Achat_C * outer_rejection_ind
-    inner_set = Achat * inner_rejection_ind
-    plot_add = outer_set + inner_set + Achat
+        # lower set
+        lower_set = 1 - lower_rej_ind
 
-  return(outer_set, inner_set, Achat, plot_add, n_rej)
+        plot_add = upper_set + lower_set + Achat
 
-def fdr_cope(data, threshold, method, alpha=0.05, tail="two",
-             k=2, alpha0=0.05/4, alpha1=0.05/2):
-  """
-  sub-setting the confidence set controlling for FDR
-
-  Parameters
-  ----------
-  data : int
-    array of voxels
-  threshold : int
-    threshold to be used for sub-setting
-  alpha : int
-    alpha level
-
-
-  Returns
-  -------
-  lower_set : array(Boolean)
-    voxels in the lower confidence set
-  upper_set : array(Boolean)
-    voxels in the upper confidence set
-  Achat : Boolean
-    voxels in the Ac_hat area
-  plot_add : array(int)
-    area representing lower_set + upper_set + Achat
-  n_rej : int or list
-    number of voxels rejected by the procedure
-
-  Example
-  -------
-  nsub = 50
-  data = numpy.random.randn(nsub, 100, 100) + 2
-  lower, upper = fdr_cope(data, threshold=2, method="BH", alpha=0.05, tail="two")
-  plt.imshow(lower)
-  plt.imshow(upper)
-
-  nsub = 50
-  data = numpy.random.randn(nsub, 100, 100) + 2
-  lower, upper = fdr_cope(data, threshold=2, method="AD", alpha0=0.05/4, alpha1 = 0.05/2, k=2 tail="two")
-  plt.imshow(lower)
-  plt.imshow(upper)
-
-  :Authors:
-    Samuel Davenport <sdavenport@health.ucsd.edu>
-    Howon Ryu <howonryu@ucsd.edu>
-  """
-  data_tstat = mvtstat(data - threshold)
-  data_dim = data.shape
-  nsubj = data_dim[0]
-  Achat = data_tstat >= 0
-  Achat_C = data_tstat < 0
-
-  if tail == "two":
-    pvals = 2 * (1 - scipy.stats.t.cdf(abs(data_tstat), df=nsubj - 1))
-    rejection_ind = np.full(np.prod(pvals.shape), 0)
-    if method == "adaptive":
-      rejection_ind, _, n_rej = fdr_adaptive(pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-    if method == "BH":
-      rejection_ind, _, n_rej = fdr_BH(pvals, alpha)
-    outer_set = 1 - Achat_C * rejection_ind
-    inner_set = Achat * rejection_ind
-    plot_add = outer_set + inner_set + Achat
-    return (outer_set, inner_set, Achat, plot_add, n_rej)
-
-  if tail == "one":
-    inner_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    #outer_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
-    rejection_ind = np.full(np.prod(inner_pvals.shape), 0)
-    if method == "adaptive":
-      inner_rejection_ind, _, inner_n_rej = fdr_adaptive(inner_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-      #outer_rejection_ind, _, outer_n_rej = fdr_adaptive(outer_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
-    if method == "BH":
-      inner_rejection_ind, _, inner_n_rej = fdr_BH(inner_pvals, alpha=alpha)
-      #outer_rejection_ind, _, outer_n_rej = fdr_BH(outer_pvals, alpha=alpha)
-    inner_set = Achat * inner_rejection_ind
-    outer_set = None
-    plot_add = inner_set + Achat
-    return (outer_set, inner_set, Achat, plot_add, inner_n_rej)
+        return lower_set, upper_set, Achat, plot_add, n_rej
+    else:
+        return("wrong method")
