@@ -199,7 +199,7 @@ def F_kap(x, k):
     return (y)
 
 
-def fdr_confset(data, threshold, method="separate", alpha=0.05,
+def fdr_confset(data, threshold, method="separate_adaptive", alpha=0.05,
              k=2, alpha0=0.05 / 4, alpha1=0.05 / 2):
     """
     sub-setting the confidence set controlling for FDR
@@ -258,7 +258,7 @@ def fdr_confset(data, threshold, method="separate", alpha=0.05,
     upper_pvals = 1 - scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
     lower_pvals = scipy.stats.t.cdf(data_tstat, df=nsubj - 1)
 
-    if method == "separate":
+    if method == "separate_adaptive":
         # upper set
         upper_rej_ind, _, upper_n_rej = fdr_BH(upper_pvals, alpha=alpha)
         upper_set = upper_rej_ind
@@ -266,6 +266,22 @@ def fdr_confset(data, threshold, method="separate", alpha=0.05,
 
         # lower set
         lower_rej_ind, _, lower_n_rej = fdr_adaptive(lower_pvals, k=k, alpha0=alpha0, alpha1=alpha1)
+        lower_set = 1 - lower_rej_ind
+        # lower_set = 1 - (Acbarhat_C * lower_rejection_ind)
+
+        n_rej = [lower_n_rej, upper_n_rej]
+
+        plot_add = upper_set + lower_set + Achat
+        return lower_set, upper_set, Achat, plot_add, n_rej
+
+    if method == "separate_BH":
+        # upper set
+        upper_rej_ind, _, upper_n_rej = fdr_BH(upper_pvals, alpha=alpha)
+        upper_set = upper_rej_ind
+        # upper_set = Achat * upper_rejection_ind
+
+        # lower set
+        lower_rej_ind, _, lower_n_rej = fdr_BH(lower_pvals, alpha=alpha)
         lower_set = 1 - lower_rej_ind
         # lower_set = 1 - (Acbarhat_C * lower_rejection_ind)
 

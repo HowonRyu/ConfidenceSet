@@ -6,7 +6,7 @@ from .random_field_generator import *
 ### FDR and power tests
 
 
-def error_check(mode, dim, threshold, method, shape, std=None, shape_spec=None, alpha=0.05):
+def error_check(mode, dim, threshold, method, shape, std_noise_shape=None, shape_spec=None, alpha=0.05):
   """
   checks FDR and FNDR with simulation
 
@@ -21,7 +21,7 @@ def error_check(mode, dim, threshold, method, shape, std=None, shape_spec=None, 
   threshold : int
     threshold to be used for sub-setting
   method : str
-    "joint" or "separate"
+    "joint", "separate_adaptive" or "separate_BH"
   shape : str
     "ramp" or "ellipse"
   shape_spec : dict
@@ -44,7 +44,7 @@ def error_check(mode, dim, threshold, method, shape, std=None, shape_spec=None, 
     Howon Ryu <howonryu@ucsd.edu>
   """
   if shape == 'noise':
-    data = np.random.randn(*dim) * std
+    data = np.random.randn(*dim) * std_noise_shape
     mu = np.zeros((dim[1], dim[2]))
 
   else:
@@ -56,18 +56,19 @@ def error_check(mode, dim, threshold, method, shape, std=None, shape_spec=None, 
   AcbarC = 1-Acbar
   m = dim[1] * dim[2]
 
-  if method == "separate":
-    lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="separate", alpha=alpha,
+  if method == "separate_adaptive":
+    lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="separate_adaptive", alpha=alpha,
              k=2, alpha0=alpha / 4, alpha1=alpha / 2)
+  if method == "separate_BH":
+    lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="separate_BH", alpha=alpha)
   elif method == "joint":
     lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="joint", alpha=alpha*2,
              k=2, alpha0=(alpha*2)/4, alpha1=(alpha*2)/2)
 
 
   if mode == "FDR":
-    if method == "separate":
+    if method == "separate_adaptive" or method == "separate_BH":
       ERR = [None, None]
-
       if n_rej[1] == 0:
         ERR[1] = 0
         #print("no rejection (upper)")
@@ -108,7 +109,7 @@ def error_check(mode, dim, threshold, method, shape, std=None, shape_spec=None, 
       return ERR
 
   elif mode == "FNDR":
-    if method == "separate":
+    if method == "separate_adaptive" or method == "separate_BH":
       ERR = [None, None]
 
       if n_rej[1] == m:
@@ -159,7 +160,7 @@ def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_ma
     mode : str
       options for error rate "FDR" or "FNDR"
     method : str
-      "separate" or "joint"
+      "joint", "separate_adaptive" or "separate_BH"
     shape : str
       "ramp" or "ellipse"
     shape_spec : dict
@@ -188,7 +189,7 @@ def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_ma
       Howon Ryu <howonryu@ucsd.edu>
     """
 
-    if method == "separate":
+    if method == "separate_adaptive" or method == "separate_BH":
       sim_table_lower = np.empty([len(c), sim_num])
       sim_table_upper = np.empty([len(c), sim_num])
 
@@ -213,6 +214,7 @@ def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_ma
                                       method=method, shape_spec=shape_spec, alpha=alpha))
         sim_table[jidx, :] = sim_temp
       return sim_table
+
 
 
 

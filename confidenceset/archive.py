@@ -1751,3 +1751,25 @@ def conf_plot_agg_temp(threshold, temp, method, seed=None, r=0.5, std = 5, fwhm_
 
   plt.suptitle(f"testing method={method}, confset method={temp}, alpha={alpha}")
   plt.show()
+
+
+dim_100 = (80,100,100)
+dim_50 = (80, 50, 50)
+
+
+spec_50, spec_100 = gen_spec(fwhm_sig=10, fwhm_noise=0, std=5, mag=4, r=0.5)
+spec_50_sig20, spec_100_sig20 = gen_spec(fwhm_sig=20, fwhm_noise=0, std=5, mag=4, r=0.5)
+spec_50_noise10, spec_100_noise10 = gen_spec(fwhm_sig=10, fwhm_noise=10, std=5, mag=4, r=0.5)
+spec_50_noise20, spec_100_noise20 = gen_spec(fwhm_sig=10, fwhm_noise=20, std=5, mag=4, r=0.5)
+
+# for plot functions
+shape_specs_50 = [spec_50, spec_50_sig20, spec_50_noise10, spec_50_noise20]
+shape_specs_100 = [spec_100, spec_100_sig20, spec_100_noise10, spec_100_noise20]
+shape_specs_sim = [shape_specs_50, shape_specs_100]
+
+# for signal plotting
+spec_cir_50, spec_elp_50, spec_ramp_50 = spec_50
+spec_cir_100, spec_elp_100, spec_ramp_100 = spec_100
+
+spec_cir_50_smth, spec_elp_50_smth, spec_ramp_50_smth = spec_50_noise10
+spec_cir_100_smth, spec_elp_100_smth, spec_ramp_100_smth = spec_100_noise10
