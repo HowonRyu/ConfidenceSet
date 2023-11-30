@@ -4,6 +4,72 @@ from .test import *
 
 
 ## threshold simulation
+def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_marg=0.2, alpha=0.05):
+    """
+    produces table for FDR, and FNDR simulation result
+
+    Parameters
+    ----------
+    sim_num : int
+      simulation number
+    mode : str
+      options for error rate "FDR" or "FNDR"
+    method : str
+      "joint", "separate_adaptive" or "separate_BH"
+    shape : str
+      "ramp" or "ellipse"
+    shape_spec : dict
+      dictionary containing shape specs
+    c : list
+      list of thresholds
+    dim : int
+      dimension of the image (N, W, H)
+    c_marg : int
+      margin allowed for the threshold
+    alpha : int
+      [0, 1] alpha level
+
+    Returns
+    -------
+    sim_table : array
+      simulated error rate result
+
+    Examples
+    --------
+    error_check_sim_table(sim_num=sim_num, mode=mode, method="joint",
+                                      shape=shape, shape_spec=shape_spec, c=c,
+                                      dim=dim, c_marg=0.2, alpha=0.05)
+
+    :Authors:
+      Howon Ryu <howonryu@ucsd.edu>
+    """
+
+    if method == "separate_adaptive" or method == "separate_BH":
+      sim_table_lower = np.empty([len(c), sim_num])
+      sim_table_upper = np.empty([len(c), sim_num])
+
+      for jidx, j in enumerate(c):
+        sim_temp_upper = list()
+        sim_temp_lower = list()
+        for i in np.arange(sim_num):
+          sim_temp_upper.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
+                                            method=method, shape_spec=shape_spec, alpha=alpha)[1])
+          sim_temp_lower.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
+                                            method=method, shape_spec=shape_spec, alpha=alpha)[0])
+        sim_table_lower[jidx, :] = sim_temp_lower
+        sim_table_upper[jidx, :] = sim_temp_upper
+      return sim_table_lower, sim_table_upper
+
+    if method == "joint":
+      sim_table = np.empty([len(c), sim_num])
+      for jidx, j in enumerate(c):
+        sim_temp = list()
+        for i in np.arange(sim_num):
+          sim_temp.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
+                                      method=method, shape_spec=shape_spec, alpha=alpha))
+        sim_table[jidx, :] = sim_temp
+      return sim_table
+
 def error_check_plot_single(sim_num, mode, shape, shape_spec, c, dim, ax, c_marg=0.2, alpha=0.05):
   """
   plots error rate simulation
@@ -152,6 +218,12 @@ def error_check_plot(sim_num, c, mode, shape_spec, c_marg=0.2,  alpha=0.05, alph
   #          ax.set_ylim([0,1])
   #        ax.legend()
   #plt.show()
+
+
+
+## threshold fwhm simulation
+
+
 
 
 
