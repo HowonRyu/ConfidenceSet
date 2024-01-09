@@ -4,9 +4,10 @@ from .test import *
 
 
 ## threshold simulation
-def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_marg=0.2, alpha=0.05):
+def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
+                        c_marg=0.2, alpha=0.05, sanity_check=False):
     """
-    produces table for FDR, and FNDR simulation result
+    produces table for FDR, and FNDR simulation result per threshold change
 
     Parameters
     ----------
@@ -14,20 +15,20 @@ def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_ma
       simulation number
     mode : str
       options for error rate "FDR" or "FNDR"
-    method : str
-      "joint", "separate_adaptive" or "separate_BH"
+    dim : tuple
+      dimension of the image (N, W, H)
     shape : str
-      "ramp" or "ellipse"
+      shape of the signal; choose from ramp or step. The rest is automatically ellipse.
     shape_spec : dict
       dictionary containing shape specs
     c : list
-      list of thresholds
-    dim : int
-      dimension of the image (N, W, H)
-    c_marg : int
+      list of thresholds (float)
+    c_marg : float
       margin allowed for the threshold
-    alpha : int
+    alpha : float
       [0, 1] alpha level
+    sanity_check : Boolean
+      sanity check with noise field (no signal)
 
     Returns
     -------
@@ -36,325 +37,142 @@ def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_ma
 
     Examples
     --------
-    error_check_sim_table(sim_num=sim_num, mode=mode, method="joint",
-                                      shape=shape, shape_spec=shape_spec, c=c,
-                                      dim=dim, c_marg=0.2, alpha=0.05)
-
+    sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint = sim_table_threshold(sim_num=sim_num, mode=mode, shape=shape,
+                                                                                                          shape_spec=shape_spec, c=c, dim=dim,
+                                                                                                          c_marg=c_marg, alpha=alpha)
     :Authors:
       Howon Ryu <howonryu@ucsd.edu>
     """
 
-    if method == "separate_adaptive" or method == "separate_BH":
-      sim_table_lower = np.empty([len(c), sim_num])
-      sim_table_upper = np.empty([len(c), sim_num])
-
-      for jidx, j in enumerate(c):
-        sim_temp_upper = list()
-        sim_temp_lower = list()
-        for i in np.arange(sim_num):
-          sim_temp_upper.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
-                                            method=method, shape_spec=shape_spec, alpha=alpha)[1])
-          sim_temp_lower.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
-                                            method=method, shape_spec=shape_spec, alpha=alpha)[0])
-        sim_table_lower[jidx, :] = sim_temp_lower
-        sim_table_upper[jidx, :] = sim_temp_upper
-      return sim_table_lower, sim_table_upper
-
-    if method == "joint":
-      sim_table = np.empty([len(c), sim_num])
-      for jidx, j in enumerate(c):
-        sim_temp = list()
-        for i in np.arange(sim_num):
-          sim_temp.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
-                                      method=method, shape_spec=shape_spec, alpha=alpha))
-        sim_table[jidx, :] = sim_temp
-      return sim_table
-
-def error_check_plot_single(sim_num, mode, shape, shape_spec, c, dim, ax, c_marg=0.2, alpha=0.05):
-  """
-  plots error rate simulation
-
-  Parameters
-  ----------
-  sim_num : int
-    simulation number
-  mode : str
-    options for error rate "FDR" or "FNDR"
-  shape : str
-    "ramp" or "ellipse"
-  shape_spec : dict
-    dictionary containing shape specs
-  c : list
-    list of thresholds
-  dim : int
-    dimension of the image (N, W, H)
-  ax : axes
-    subplot figure to use
-  c_marg : int
-    margin allowed for the threshold
-  tail : str
-    "one" or "two"
-  alpha : int
-    [0, 1] alpha level
-
-  Examples
-  --------
-  shapes = ["circular", "ellipse", "ramp"]
-  # 50*50
-  shape_specs_50 = shape_spec[0]
-  fig, axs = plt.subplots(len(shape_specs_50), 3, figsize=figsize)
-  for i in range(len(shape_specs_50)):
-      for j, shape in enumerate(shapes):
-          ax = axs[i, j]
-          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_50[i][j], c=c, dim=dim_50, ax=ax)
-          ax.set_title(f"{shape}, dim={dim_50}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
-          ax.set_xlabel("threshold")
-          ax.set_ylabel(str(mode))
-          if mode == "fdr":
-            ax.set_ylim([0, 0.02])
-          elif mode == "fndr":
-            ax.set_ylim([0,1])
-          ax.legend()
-  plt.show()
-
-  :Authors:
-    Howon Ryu <howonryu@ucsd.edu>
-  """
-
-  tbl_joint = error_check_sim_table(sim_num=sim_num, mode=mode, method="joint",
-                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
-                                     alpha=alpha*2)
-  tbl_separate_adaptive_lower, tbl_separate_adaptive_upper = error_check_sim_table(sim_num=sim_num, mode=mode, method="separate_adaptive",
-                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
-                                     alpha=alpha)
-  tbl_separate_BH_lower, tbl_separate_BH_upper = error_check_sim_table(sim_num=sim_num, mode=mode, method="separate_BH",
-                                    shape=shape, shape_spec=shape_spec, c=c, dim=dim, c_marg=c_marg,
-                                     alpha=alpha)
-  #tbl_separate_avg = (tbl_separate_lower + tbl_separate_upper)/2
+    sim_table_adaptive_lower = np.empty([len(c), sim_num])
+    sim_table_BH_lower = np.empty([len(c), sim_num])
+    sim_table_BH_upper = np.empty([len(c), sim_num])
+    sim_table_joint = np.empty([len(c), sim_num])
 
 
-  joint = np.mean(tbl_joint, axis=1)
-  separate_upper_BH = np.mean(tbl_separate_BH_upper, axis=1)
-  separate_lower_adaptive = np.mean(tbl_separate_adaptive_lower, axis=1)
-  separate_lower_BH = np.mean(tbl_separate_BH_lower, axis=1)
-  #separate_avg = np.mean(tbl_separate_avg, axis=1)
+    for thres_idx, thres in enumerate(c):
+      temp_sim_table_adaptive_lower = list()
+      temp_sim_table_BH_lower = list()
+      temp_sim_table_BH_upper = list()
+      temp_sim_table_joint = list()
+      for i in np.arange(sim_num):
+        #seed = np.random.randint(0, 2**32 - 1)
+        #print(f'seed:{seed}')
 
-  ys = [joint, separate_lower_adaptive, separate_lower_BH, separate_upper_BH]
-  names = ['Joint', 'Separate(lower adaptive)', 'Separate(lower BH)', 'Separate(upper BH)']
+        if sanity_check:
+          data = np.random.randn(*dim)
+          mu = np.zeros(dim[1], dim[2])
+        else:
+          data, mu = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec)
 
-  #m0/m
-  #_, mu = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec)
-  #m = np.sum(mu>2)
-  #m0 = list()
-  #for thres in c:
-  # m0.append(np.sum(np.logical_and(mu < thres+c_marg, mu > thres-c_marg)))
+        separate_adaptive_error_check = error_check(mode=mode, data=data, mu=mu, threshold=thres,
+                                          method="separate_adaptive",  alpha=alpha)
+        separate_BH_error_check = error_check(mode=mode, data=data, mu=mu, threshold=thres,
+                                          method="separate_BH", alpha=alpha)
+        joint_error_check = error_check(mode=mode, data=data, mu=mu, threshold=thres,
+                                          method="joint", alpha=alpha*2)
 
+        temp_sim_table_adaptive_lower.append(separate_adaptive_error_check[0])
+        temp_sim_table_BH_lower.append(separate_BH_error_check[0])
+        temp_sim_table_BH_upper.append(separate_BH_error_check[1])
+        temp_sim_table_joint.append(joint_error_check)
 
-  for i, y in enumerate(ys):
-    ax.plot(c, y, label=names[i])
+      sim_table_adaptive_lower[thres_idx, :] = temp_sim_table_adaptive_lower
+      sim_table_BH_lower[thres_idx, :] = temp_sim_table_BH_lower
+      sim_table_BH_upper[thres_idx, :] = temp_sim_table_BH_upper
+      sim_table_joint[thres_idx, :] = temp_sim_table_joint
 
-
-def error_check_plot(sim_num, c, mode, shape_spec, c_marg=0.2,  alpha=0.05, alpha0=0.05/4, alpha1=0.05/2, figsize=(15,10)):
-  """
-  combines error_check_plot_single to create a grid of simulations plots with different simulation settings
-
-  Parameters
-  ----------
-  sim_num : int
-    simulation number
-  c : list
-    list of thresholds
-  mode : str
-    options for error rate "FDR" or "FNDR"
-  shape_spec : dict
-    dictionary containing shape specs
-  figsize : tuple
-    figure size
-
-  Examples
-  --------
-  error_check_plot(sim_num=100, mode="fdr", c=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], shape_spec=shape_specs_sim, figsize=(23,30))
-
-  :Authors:
-    Howon Ryu <howonryu@ucsd.edu>
-  """
-
-  shapes = ["circular", "ellipse", "ramp"]
-  dim_50 = (80,50,50)
-  dim_100 = (80,100,100)
-  # 50*50
-  shape_specs_50 = shape_spec[0]
-  fig, axs = plt.subplots(len(shape_specs_50), 3, figsize=figsize)
-  for i in range(len(shape_specs_50)):
-      for j, shape in enumerate(shapes):
-          ax = axs[i, j]
-          error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape,  shape_spec=shape_specs_50[i][j], c=c,
-                                  dim=dim_50, ax=ax, c_marg=c_marg, alpha=alpha)
-          ax.set_title(f"{shape}, dim={dim_50}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
-          ax.set_xlabel("threshold")
-          ax.set_ylabel(str(mode))
-          if mode == "FDR":
-            ax.set_ylim([0, 0.07])
-          elif mode == "FNDR":
-            ax.set_ylim([0,1])
-          ax.legend()
-  plt.show()
+    return sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint
 
 
-  # 100*100
-  #shape_specs_100 = shape_spec[1]
-  #fig, axs = plt.subplots(len(shape_specs_100), 3, figsize=figsize)
-  #for i in range(len(shape_specs_100)):
-  #    for j, shape in enumerate(shapes):
-  #        ax = axs[i, j]
-  #        error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_100[i][j], c=c,
-  #                                dim=dim_100, ax=ax, c_marg=c_marg, tail=tail, alpha=alpha, alpha0=alpha0, alpha1=alpha1)
-  #        ax.set_title(f"{shape}, dim={dim_100}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
-  #        ax.set_xlabel("threshold")
-  #        ax.set_ylabel(str(mode))
-  #        if mode == "fdr":
-  #          ax.set_ylim([0, 0.02])
-  #        elif mode == "fndr":
-  #          ax.set_ylim([0,1])
-  #        ax.legend()
-  #plt.show()
-
-
-
-## threshold fwhm simulation
-
-
-
-
-
-## noise fwhm simulation
-def sim_table_noise(sim_num, mode, method, shape, shape_spec, threshold, noise_fwhm, dim, alpha=0.05):
+def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax,
+                              c_marg=0.2, alpha=0.05):
     """
-    produces table for FDR, and FNDR simulation result per different noise smoothness level
+    plots error rate simulation for one setting (use within sim_threshold)
 
     Parameters
     ----------
     sim_num : int
       simulation number
+    dim : tuple
+      dimension of the image (N, W, H)
     mode : str
       options for error rate "FDR" or "FNDR"
-    method : str
-      "joint", "separate_adaptive" or "separate_BH"
     shape : str
-      "ramp" or "ellipse"
+      shape of the signal; choose from ramp or step. The rest is automatically ellipse.
     shape_spec : dict
-      dictionary containing shape specs - specify the shape spec except for shape_spec['fwhm_noise']
-    threshold : int
-      threshold level
-    noise_fwhm : int
-      list of full width half maximum for noise smoothing
-    dim : int
-      dimension of the image (N, W, H)
-    alpha : int
+      dictionary containing shape specs
+    c : list
+      list of thresholds (float)
+    ax : axes
+      subplot figure to use
+    c_marg : float
+      margin allowed for the threshold
+    alpha : float
       [0, 1] alpha level
 
     Returns
     -------
-    sim_table : array
-      simulated error rate result
+    sim_result_single : dict
+      simulation result for single plot
+
 
     Examples
     --------
-    sim_table_noise(sim_num=sim_num, mode=mode, method="joint", noise_fwhm=[3,5,6,7,8]
-                                      shape=shape, shape_spec=shape_spec, threshold=2,
-                                      dim=dim,  alpha=0.05)
+    dim_50 = (80,50,50)
+    dim_100 = (80,100,100)
+    sim_result = dict()
+    # 50*50
+    fig, axs = plt.subplots(len(fwhm_noise_vec), len(fwhm_signal_vec), figsize=figsize)
+
+    for i, fwhm_noise in enumerate(fwhm_noise_vec):
+        for j, fwhm_signal in enumerate(fwhm_signal_vec):
+            ax = axs[i, j]
+            shape_spec['fwhm_noise'] = fwhm_noise
+            shape_spec['fwhm_signal'] = fwhm_signal
+            sim_result_single, sim_error = sim_plot_single_threshold(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_spec, c=c,
+                                    dim=dim_50, ax=ax, c_marg=c_marg, alpha=alpha)
+
+            # sim_result per plot
+            key_name = "noise"+str(fwhm_noise)+"signal"+str(fwhm_signal)
+            sim_result[key_name] = sim_result_single
+
+            # plotting
+            ax.set_title(f"fwhm(noise)={fwhm_noise}, fwhm(signal)={fwhm_signal}, \n SE={sim_error}, shape={shape}") #std={std}
+            ax.set_xlabel("c")
+            ax.set_ylabel(str(mode))
+            if mode == "FDR":
+              ax.set_ylim([0, 0.2])
+            elif mode == "FNDR":
+              ax.set_ylim([0,1.1])
+            ax.legend()
+    plt.show()
+
 
     :Authors:
       Howon Ryu <howonryu@ucsd.edu>
     """
+    sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint = sim_table_threshold(
+        sim_num=sim_num, mode=mode, shape=shape,
+        shape_spec=shape_spec, c=c, dim=dim,
+        c_marg=c_marg, alpha=alpha)
 
-    if method == "separate_adaptive" or method == "separate_BH":
-        sim_table_lower = np.empty([len(noise_fwhm), sim_num])
-        sim_table_upper = np.empty([len(noise_fwhm), sim_num])
+    sim_std_stacked = np.stack([sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint],
+                               axis=0)
+    sim_std_error = round(np.std(sim_std_stacked) / np.sqrt(sim_num), 3)
 
-        for jidx, j in enumerate(noise_fwhm):
-            sim_temp_upper = list()
-            sim_temp_lower = list()
-            shape_spec['fwhm_noise'] = j
-            for i in np.arange(sim_num):
-                sim_temp_upper.append(error_check(mode=mode, dim=dim, threshold=threshold, shape=shape,
-                                                  method=method, shape_spec=shape_spec, alpha=alpha)[1])
-                sim_temp_lower.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
-                                                  method=method, shape_spec=shape_spec, alpha=alpha)[0])
-            sim_table_lower[jidx, :] = sim_temp_lower
-            sim_table_upper[jidx, :] = sim_temp_upper
-        return sim_table_lower, sim_table_upper
-
-    if method == "joint":
-        sim_table = np.empty([len(noise_fwhm), sim_num])
-        for jidx, j in enumerate(noise_fwhm):
-            sim_temp = list()
-            shape_spec['fwhm_noise'] = j
-            for i in np.arange(sim_num):
-                sim_temp.append(error_check(mode=mode, dim=dim, threshold=threshold, shape=shape,
-                                            method=method, shape_spec=shape_spec, alpha=alpha))
-            sim_table[jidx, :] = sim_temp
-        return sim_table
-
-
-def sim_plot_single_noise(sim_num, mode, shape, shape_spec, threshold,
-                          noise_fwhm, dim, ax, alpha=0.05):
-    """
-    plots error rate simulation
-
-    Parameters
-    ----------
-      sim_num : int
-        simulation number
-      mode : str
-        options for error rate "FDR" or "FNDR"
-      method : str
-        "joint", "separate_adaptive" or "separate_BH"
-      shape : str
-        "ramp" or "ellipse"
-      shape_spec : dict
-        dictionary containing shape specs - specify the shape spec except for shape_spec['fwhm_noise']
-      threshold : int
-        threshold level
-      noise_fwhm : int
-        list of full width half maximum for noise smoothing
-      dim : int
-        dimension of the image (N, W, H)
-      alpha : int
-        [0, 1] alpha level
-    Examples
-    --------
-    noise_fwhm = [2,4,6,8,10]
-    sim_plot_single_noise(sim_num=sim_num, mode=mode, shape=shape,
-                                  shape_spec=shape_specs_50[i][j], threshold=threshold,
-                                  noise_fwhm=noise_fwhm, dim=dim_50, ax=ax, alpha=alpha)
-    :Authors:
-      Howon Ryu <howonryu@ucsd.edu>
-    """
-
-    tbl_joint = sim_table_noise(sim_num=sim_num, mode=mode, method="joint",
-                                shape=shape, shape_spec=shape_spec, threshold=threshold, dim=dim,
-                                alpha=alpha * 2, noise_fwhm=noise_fwhm)
-    tbl_separate_adaptive_lower, tbl_separate_adaptive_upper = sim_table_noise(sim_num=sim_num, mode=mode,
-                                                                               method="separate_adaptive",
-                                                                               shape=shape, shape_spec=shape_spec,
-                                                                               threshold=threshold, dim=dim,
-                                                                               alpha=alpha, noise_fwhm=noise_fwhm)
-    tbl_separate_BH_lower, tbl_separate_BH_upper = sim_table_noise(sim_num=sim_num, mode=mode, method="separate_BH",
-                                                                   shape=shape, shape_spec=shape_spec,
-                                                                   threshold=threshold, dim=dim,
-                                                                   alpha=alpha, noise_fwhm=noise_fwhm)
     # tbl_separate_avg = (tbl_separate_lower + tbl_separate_upper)/2
 
-    joint = np.mean(tbl_joint, axis=1)
-    separate_upper_BH = np.mean(tbl_separate_BH_upper, axis=1)
-    separate_lower_adaptive = np.mean(tbl_separate_adaptive_lower, axis=1)
-    separate_lower_BH = np.mean(tbl_separate_BH_lower, axis=1)
+    joint = np.mean(sim_table_joint, axis=1)
+    separate_upper_BH = np.mean(sim_table_BH_upper, axis=1)
+    separate_lower_adaptive = np.mean(sim_table_adaptive_lower, axis=1)
+    separate_lower_BH = np.mean(sim_table_BH_lower, axis=1)
     # separate_avg = np.mean(tbl_separate_avg, axis=1)
 
-    ys = [joint, separate_lower_adaptive, separate_lower_BH, separate_upper_BH]
-    names = ['Joint', 'Separate(lower adaptive)', 'Separate(lower BH)', 'Separate(upper BH)']
-
+    methods = [joint, separate_lower_adaptive, separate_lower_BH, separate_upper_BH]
+    methods_names = ['Joint', 'Separate(lower adaptive)', 'Separate(lower BH)', 'Separate(upper BH)']
+    method_key = ['joint', 'lower_adaptive)', 'lower_BH)', 'upper_BH']
+    sim_result_single = dict(zip(method_key, methods))
     # m0/m
     # _, mu = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec)
     # m = np.sum(mu>2)
@@ -362,13 +180,15 @@ def sim_plot_single_noise(sim_num, mode, shape, shape_spec, threshold,
     # for thres in c:
     # m0.append(np.sum(np.logical_and(mu < thres+c_marg, mu > thres-c_marg)))
 
-    for i, y in enumerate(ys):
-        ax.plot(noise_fwhm, y, label=names[i])
+    for i, method in enumerate(methods):
+        ax.plot(c, method, label=methods_names[i])
+        if mode == "FDR":
+            ax.axhline(y=0.05, color='red', linestyle='--')
+    return sim_result_single, sim_std_error
 
 
-def sim_plot_noise(sim_num, noise_fwhm, mode, threshold=2, std=5, mag=4,
-                   alpha=0.05, alpha0=0.05 / 4, alpha1=0.05 / 2,
-                   font_size=9, figsize=(15, 10)):
+def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
+                  c_marg=0.2, alpha=0.05, alpha0=0.05 / 4, alpha1=0.05 / 2, figsize=(15, 10)):
     """
     combines error_check_plot_single to create a grid of simulations plots with different simulation settings
 
@@ -376,79 +196,76 @@ def sim_plot_noise(sim_num, noise_fwhm, mode, threshold=2, std=5, mag=4,
     ----------
     sim_num : int
       simulation number
-    threshold : int
-      threshold level
-    noise_fwhm : int
-      list of full width half maximum for noise smoothing
+    c : list
+      list of thresholds (float)
     mode : str
       options for error rate "FDR" or "FNDR"
     shape_spec : dict
       dictionary containing shape specs
     figsize : tuple
       figure size
-    std : int
-      standard deviation for the noise field N(0, std^2)
-    mag : int
-      magnitude of the signal
+    Returns
+    -------
+    sim_result : dict
+      simulation result
 
     Examples
     --------
-    error_check_plot(sim_num=100, mode="fdr", c=[0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4], shape_spec=shape_specs_sim, figsize=(23,30))
+    FDR_step = sim_threshold(sim_num=500, c=np.linspace(-2, 2, num=21), mode="FDR", shape="step",
+                   fwhm_signal_vec=[0,5,10], fwhm_noise_vec=[0,5,15], std=1,
+                       c_marg=0.2,  alpha=0.05, alpha0=0.05/4, alpha1=0.05/2, figsize=(20,20))
 
     :Authors:
       Howon Ryu <howonryu@ucsd.edu>
     """
-    # simulation setting
-    shapes = ["circular", "ellipse", "ramp"]
+    if shape == "step":
+        shape_spec = {'fwhm_signal': 0,
+                      'fwhm_noise': 0,
+                      'std': std}
+    elif shape == "ramp":
+        shape_spec = {'direction': 1,
+                      'mag': (-1, 1),
+                      'fwhm_noise': 0,
+                      'std': std}
+    elif shape == "circle":
+        shape_spec = {'a': 0.5, 'b': 0.5, 'mag': 3,
+                      'fwhm_signal': 0,
+                      'fwhm_noise': 0,
+                      'std': std}
+
     dim_50 = (80, 50, 50)
-
-    spec_50_sig5, spec_100_sig5 = gen_spec(fwhm_sig=5, fwhm_noise=0, std=std, mag=mag, r=0.5)
-    spec_50_sig10, spec_100_sig10 = gen_spec(fwhm_sig=10, fwhm_noise=0, std=std, mag=mag, r=0.5)
-
-    shape_specs_50 = [spec_50_sig5, spec_50_sig10]
-
+    dim_100 = (80, 100, 100)
+    sim_result = dict()
     # 50*50
-    fig, axs = plt.subplots(len(shape_specs_50), 3, figsize=figsize)
-    for i in range(len(shape_specs_50)):
-        for j, shape in enumerate(shapes):
+    fig, axs = plt.subplots(len(fwhm_noise_vec), len(fwhm_signal_vec), figsize=figsize)
+
+    for i, fwhm_noise in enumerate(fwhm_noise_vec):
+        for j, fwhm_signal in enumerate(fwhm_signal_vec):
             ax = axs[i, j]
-            sim_plot_single_noise(sim_num=sim_num, mode=mode, shape=shape,
-                                  shape_spec=shape_specs_50[i][j], threshold=threshold,
-                                  noise_fwhm=noise_fwhm, dim=dim_50, ax=ax, alpha=alpha)
+            shape_spec['fwhm_noise'] = fwhm_noise
+            shape_spec['fwhm_signal'] = fwhm_signal
+            sim_result_single, sim_error = sim_plot_single_threshold(sim_num=sim_num, mode=mode, shape=shape,
+                                                                     shape_spec=shape_spec, c=c,
+                                                                     dim=dim_50, ax=ax, c_marg=c_marg, alpha=alpha)
+
+            # sim_result per plot
+            key_name = "noise" + str(fwhm_noise) + "signal" + str(fwhm_signal)
+            sim_result[key_name] = sim_result_single
+
+            # plotting
             ax.set_title(
-                f"{shape}, c={threshold}, signal fwhm={shape_specs_50[i][j]['fwhm_signal']}, std={shape_specs_50[i][j]['std']}")  # dim={dim_50},
-            ax.title.set_fontsize(font_size)
-            ax.set_xlabel("noise smoothing (fwhm)")
+                f"fwhm(noise)={fwhm_noise}, fwhm(signal)={fwhm_signal}, \n SE={sim_error}, shape={shape}")  # std={std}
+            ax.set_xlabel("c")
             ax.set_ylabel(str(mode))
-            # if mode == "FDR":
-            #  ax.set_ylim([0, 0.07])
-            # elif mode == "FNDR":
-            #  ax.set_ylim([0,1])
+            if mode == "FDR":
+                ax.set_ylim([0, 0.2])
+            elif mode == "FNDR":
+                ax.set_ylim([0, 1.1])
             ax.legend()
     plt.show()
 
-    # 100*100
-    #  dim_100 = (80,100,100)
-    # shape_specs_100 = [spec_100_sig10, spec_100_sig10]
-    # fig, axs = plt.subplots(len(shape_specs_100), 3, figsize=figsize)
-    # for i in range(len(shape_specs_100)):
-    #    for j, shape in enumerate(shapes):
-    #        ax = axs[i, j]
-    #        error_check_plot_single(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_specs_100[i][j], c=c,
-    #                                dim=dim_100, ax=ax, c_marg=c_marg, tail=tail, alpha=alpha, alpha0=alpha0, alpha1=alpha1)
-    #        ax.set_title(f"{shape}, dim={dim_100}, fwhm_noise={ shape_specs_50[i][j]['fwhm_noise'] }, fwhm_signal={ shape_specs_50[i][j]['fwhm_signal']}") #, std={ shape_specs_100[i][j]['std'] }
-    #        ax.set_xlabel("threshold")
-    #        ax.set_ylabel(str(mode))
-    #        if mode == "fdr":
-    #          ax.set_ylim([0, 0.02])
-    #        elif mode == "fndr":
-    #          ax.set_ylim([0,1])
-    #        ax.legend()
-    # plt.show()
+    return sim_result
 
-
-
-  ## signal fwhm simulation
 
 
 

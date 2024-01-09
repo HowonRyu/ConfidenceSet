@@ -6,54 +6,44 @@ from .random_field_generator import *
 ### FDR and power tests
 
 
-def error_check(mode, dim, threshold, method, shape, std_noise_shape=None, shape_spec=None, alpha=0.05):
+def error_check(data, mu, mode, threshold, method, alpha=0.05):
   """
-  checks FDR and FNDR with simulation
+  returns the error rate (FDR or FNDR) for the input data
 
   Parameters
   ----------
-  temp : str
-    options for creating confidence set "0", "1" or "2"
+  data : array
+    2D field input of dim (N, W, H)
+  mu : array
+    2D signal field input for ground truth of dim (N, W, H)
   mode : str
     options for error rate "FDR" or "FNDR"
-  dim : int
-    dimension of the image (N, W, H)
-  threshold : int
-    threshold to be used for sub-setting
+  threshold : float
+    c, the threshold to be used for inference
   method : str
     "joint", "separate_adaptive" or "separate_BH"
-  shape : str
-    "ramp" or "ellipse"
-  shape_spec : dict
-    dictionary containing shape specs
-  alpha : int
+  alpha : float
     [0, 1] alpha level
-
 
   Returns
   -------
-  ERR : list or int
+  ERR : list or float
     corresponding error rates
 
   Examples
   --------
-  ERR = error_check(mode="FNDR", dim=(80,50,50),threshold=4,
-  method="joint", shape="circular", shape_spec=spec_cir_50_smth, alpha=0.05)
+  field, signal = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec)
+  ERR = error_check(mode="FNDR", data=field, mu=signal, threshold=4, method="joint", alpha=0.05)
 
   :Authors:
     Howon Ryu <howonryu@ucsd.edu>
   """
-  if shape == 'noise':
-    data = np.random.randn(*dim) * std_noise_shape
-    mu = np.zeros((dim[1], dim[2]))
-
-  else:
-    data, mu = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec)
 
   Ac = mu > threshold
   AcC = 1 - Ac
   Acbar = mu >= threshold
   AcbarC = 1-Acbar
+  dim = data.shape
   m = dim[1] * dim[2]
 
   if method == "separate_adaptive":
@@ -61,7 +51,7 @@ def error_check(mode, dim, threshold, method, shape, std_noise_shape=None, shape
              k=2, alpha0=alpha / 4, alpha1=alpha / 2)
   if method == "separate_BH":
     lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="separate_BH", alpha=alpha)
-  elif method == "joint":
+  if method == "joint":
     lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="joint", alpha=alpha*2,
              k=2, alpha0=(alpha*2)/4, alpha1=(alpha*2)/2)
 
@@ -92,7 +82,7 @@ def error_check(mode, dim, threshold, method, shape, std_noise_shape=None, shape
 
       return ERR
 
-    elif method == "joint":
+    if method == "joint":
       if n_rej == 0:
         ERR = 0
         #print("no rejection")
@@ -108,7 +98,7 @@ def error_check(mode, dim, threshold, method, shape, std_noise_shape=None, shape
         ERR = nom / denom
       return ERR
 
-  elif mode == "FNDR":
+  if mode == "FNDR":
     if method == "separate_adaptive" or method == "separate_BH":
       ERR = [None, None]
 
@@ -134,7 +124,7 @@ def error_check(mode, dim, threshold, method, shape, std_noise_shape=None, shape
 
       return ERR
 
-    elif method == "joint":
+    if method == "joint":
       if n_rej == 2*m:
         ERR = 0
         #print("all rejection")
@@ -149,71 +139,6 @@ def error_check(mode, dim, threshold, method, shape, std_noise_shape=None, shape
         ERR = nom / denom
       return ERR
 
-def error_check_sim_table(sim_num, mode, method, shape, shape_spec, c, dim, c_marg=0.2, alpha=0.05):
-    """
-    produces table for FDR, and FNDR simulation result
-
-    Parameters
-    ----------
-    sim_num : int
-      simulation number
-    mode : str
-      options for error rate "FDR" or "FNDR"
-    method : str
-      "joint", "separate_adaptive" or "separate_BH"
-    shape : str
-      "ramp" or "ellipse"
-    shape_spec : dict
-      dictionary containing shape specs
-    c : list
-      list of thresholds
-    dim : int
-      dimension of the image (N, W, H)
-    c_marg : int
-      margin allowed for the threshold
-    alpha : int
-      [0, 1] alpha level
-
-    Returns
-    -------
-    sim_table : array
-      simulated error rate result
-
-    Examples
-    --------
-    error_check_sim_table(sim_num=sim_num, mode=mode, method="joint",
-                                      shape=shape, shape_spec=shape_spec, c=c,
-                                      dim=dim, c_marg=0.2, alpha=0.05)
-
-    :Authors:
-      Howon Ryu <howonryu@ucsd.edu>
-    """
-
-    if method == "separate_adaptive" or method == "separate_BH":
-      sim_table_lower = np.empty([len(c), sim_num])
-      sim_table_upper = np.empty([len(c), sim_num])
-
-      for jidx, j in enumerate(c):
-        sim_temp_upper = list()
-        sim_temp_lower = list()
-        for i in np.arange(sim_num):
-          sim_temp_upper.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
-                                            method=method, shape_spec=shape_spec, alpha=alpha)[1])
-          sim_temp_lower.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
-                                            method=method, shape_spec=shape_spec, alpha=alpha)[0])
-        sim_table_lower[jidx, :] = sim_temp_lower
-        sim_table_upper[jidx, :] = sim_temp_upper
-      return sim_table_lower, sim_table_upper
-
-    if method == "joint":
-      sim_table = np.empty([len(c), sim_num])
-      for jidx, j in enumerate(c):
-        sim_temp = list()
-        for i in np.arange(sim_num):
-          sim_temp.append(error_check(mode=mode, dim=dim, threshold=j, shape=shape,
-                                      method=method, shape_spec=shape_spec, alpha=alpha))
-        sim_table[jidx, :] = sim_temp
-      return sim_table
 
 
 

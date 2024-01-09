@@ -10,7 +10,7 @@ def fdr_BH(pvalues, alpha=0.05):
     ----------
     pvalues : int
       an array or list of p-values
-    alpha : int
+    alpha : float
       [0, 1] alpha level
 
     Returns
@@ -105,9 +105,9 @@ def fdr_adaptive(pvalues, k=2, alpha0=0.05 / 4, alpha1=0.05 / 2):
       an array or list of p-values
     k : int
       parameter for the F_kap function
-    alpha0 : int
+    alpha0 : float
       [0, 1] alpha level for the first stage
-    alpha1 : int
+    alpha1 : float
       [0, 1] alpha level for the second stage
 
     Returns
@@ -206,32 +206,32 @@ def fdr_confset(data, threshold, method="separate_adaptive", alpha=0.05,
 
     Parameters
     ----------
-    data : int
+    data : array
       array of voxels
-    method : str
-      either "separate" or "joint"
-    threshold : int
+    threshold : loat
       threshold to be used for sub-setting
-    alpha : int
-      alpha level
-    k : int
+    method : str
+      "joint", "separate_adaptive" or "separate_BH"
+    alpha : float
+      [0, 1] alpha level
+    k : float
       kappa level for the adaptive procedure
-    alpha0 : int
+    alpha0 : float
       alpha0 level for the adaptive procedure
-    alpha1 : int
+    alpha1 : float
       alpha1 level for the adaptive procedure
 
 
     Returns
     -------
-    lower_set : array(Boolean)
-      voxels in the lower confidence set
-    upper_set : array(Boolean)
-      voxels in the upper confidence set
+    lower_set : array
+      voxels in the lower confidence set (Boolean)
+    upper_set : array
+      voxels in the upper confidence set (Boolean)
     Achat : Boolean
       voxels in the Ac_hat area
-    plot_add : array(int)
-      area representing lower_set + upper_set + Achat
+    plot_add : array
+      area representing lower_set + upper_set + Achat (float)
     n_rej: list
       number of voxels rejected by the procedure for lower and upper sets or both
 
@@ -239,7 +239,7 @@ def fdr_confset(data, threshold, method="separate_adaptive", alpha=0.05,
     -------
     nsub = 50
     data = numpy.random.randn(nsub, 100, 100) + 2
-    lower, upper, _, _, _ = fdr_cope(data, threshold=2, method="separate", alpha=0.05, tail="two")
+    lower, upper, _, _, _ = fdr_confset(data, threshold=2, method="separate", alpha=0.05, tail="two")
     plt.imshow(lower)
     plt.imshow(upper)
 
