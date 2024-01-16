@@ -5,7 +5,7 @@ from .test import *
 
 ## threshold simulation
 def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
-                        c_marg=0.2, alpha=0.05, sanity_check=False):
+                        alpha=0.05, sanity_check=False):
     """
     produces table for FDR, and FNDR simulation result per threshold change
 
@@ -23,8 +23,6 @@ def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
       dictionary containing shape specs
     c : list
       list of thresholds (float)
-    c_marg : float
-      margin allowed for the threshold
     alpha : float
       [0, 1] alpha level
     sanity_check : Boolean
@@ -39,7 +37,7 @@ def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
     --------
     sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint = sim_table_threshold(sim_num=sim_num, mode=mode, shape=shape,
                                                                                                           shape_spec=shape_spec, c=c, dim=dim,
-                                                                                                          c_marg=c_marg, alpha=alpha)
+                                                                                                        alpha=alpha)
     :Authors:
       Howon Ryu <howonryu@ucsd.edu>
     """
@@ -56,8 +54,6 @@ def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
       temp_sim_table_BH_upper = list()
       temp_sim_table_joint = list()
       for i in np.arange(sim_num):
-        #seed = np.random.randint(0, 2**32 - 1)
-        #print(f'seed:{seed}')
 
         if sanity_check:
           data = np.random.randn(*dim)
@@ -85,8 +81,7 @@ def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
     return sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint
 
 
-def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax,
-                              c_marg=0.2, alpha=0.05):
+def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax, alpha=0.05):
     """
     plots error rate simulation for one setting (use within sim_threshold)
 
@@ -106,8 +101,6 @@ def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax,
       list of thresholds (float)
     ax : axes
       subplot figure to use
-    c_marg : float
-      margin allowed for the threshold
     alpha : float
       [0, 1] alpha level
 
@@ -131,7 +124,7 @@ def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax,
             shape_spec['fwhm_noise'] = fwhm_noise
             shape_spec['fwhm_signal'] = fwhm_signal
             sim_result_single, sim_error = sim_plot_single_threshold(sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_spec, c=c,
-                                    dim=dim_50, ax=ax, c_marg=c_marg, alpha=alpha)
+                                    dim=dim_50, ax=ax, alpha=alpha)
 
             # sim_result per plot
             key_name = "noise"+str(fwhm_noise)+"signal"+str(fwhm_signal)
@@ -153,9 +146,7 @@ def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax,
       Howon Ryu <howonryu@ucsd.edu>
     """
     sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint = sim_table_threshold(
-        sim_num=sim_num, mode=mode, shape=shape,
-        shape_spec=shape_spec, c=c, dim=dim,
-        c_marg=c_marg, alpha=alpha)
+        sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_spec, c=c, dim=dim, alpha=alpha)
 
     sim_std_stacked = np.stack([sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint],
                                axis=0)
@@ -188,7 +179,7 @@ def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax,
 
 
 def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
-                  c_marg=0.2, alpha=0.05, alpha0=0.05 / 4, alpha1=0.05 / 2, figsize=(15, 10)):
+                   alpha=0.05, figsize=(15, 10)):
     """
     combines error_check_plot_single to create a grid of simulations plots with different simulation settings
 
@@ -200,10 +191,19 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
       list of thresholds (float)
     mode : str
       options for error rate "FDR" or "FNDR"
-    shape_spec : dict
-      dictionary containing shape specs
+    shape : str
+      options for shape, choose from "circle", "step", or "ramp"
+    fwhm_signal_vec : list
+      list of signal FWHMs to test  (float)
+    fwhm_noise_vec : list
+      list of noise FWHMs to test  (float)
+    std : float
+      standard deviation of the noise
+    alpha : float
+      [0, 1] alpha level
     figsize : tuple
       figure size
+
     Returns
     -------
     sim_result : dict
@@ -213,7 +213,7 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
     --------
     FDR_step = sim_threshold(sim_num=500, c=np.linspace(-2, 2, num=21), mode="FDR", shape="step",
                    fwhm_signal_vec=[0,5,10], fwhm_noise_vec=[0,5,15], std=1,
-                       c_marg=0.2,  alpha=0.05, alpha0=0.05/4, alpha1=0.05/2, figsize=(20,20))
+                        alpha=0.05, alpha0=0.05/4, alpha1=0.05/2, figsize=(20,20))
 
     :Authors:
       Howon Ryu <howonryu@ucsd.edu>
@@ -234,9 +234,9 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
                       'std': std}
 
     dim_50 = (80, 50, 50)
-    dim_100 = (80, 100, 100)
+
     sim_result = dict()
-    # 50*50
+
     fig, axs = plt.subplots(len(fwhm_noise_vec), len(fwhm_signal_vec), figsize=figsize)
 
     for i, fwhm_noise in enumerate(fwhm_noise_vec):
@@ -246,7 +246,7 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
             shape_spec['fwhm_signal'] = fwhm_signal
             sim_result_single, sim_error = sim_plot_single_threshold(sim_num=sim_num, mode=mode, shape=shape,
                                                                      shape_spec=shape_spec, c=c,
-                                                                     dim=dim_50, ax=ax, c_marg=c_marg, alpha=alpha)
+                                                                     dim=dim_50, ax=ax, alpha=alpha)
 
             # sim_result per plot
             key_name = "noise" + str(fwhm_noise) + "signal" + str(fwhm_signal)
