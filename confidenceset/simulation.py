@@ -228,7 +228,7 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
                       'fwhm_noise': 0,
                       'std': std}
     elif shape == "circle":
-        shape_spec = {'a': 0.5, 'b': 0.5, 'mag': 3,
+        shape_spec = {'r':0.5, 'mag': 3,
                       'fwhm_signal': 0,
                       'fwhm_noise': 0,
                       'std': std}

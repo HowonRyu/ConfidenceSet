@@ -89,6 +89,8 @@ def gen_2D(dim, shape, shape_spec, seed=None, truncate=3):
     mu = step_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
   elif shape == "ramp":
     mu = ramp_2D(dim=dim, shape_spec=shape_spec)
+  elif shape == "circle":
+    mu = circle_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
   else:
     mu = ellipse_2D(dim=dim, shape_spec=shape_spec, truncate=truncate)
 
@@ -189,6 +191,45 @@ def ellipse_2D(dim, shape_spec, truncate=3):
 
   return(mu)
 
+def circle_2D(dim, shape_spec, truncate=3):
+  """
+  generates 2D circle signal
+
+  Parameters
+  ----------
+  dim : tuple
+    dimension of the image (N, W, H)
+  shape_spec : dict
+    dictionary storing shape parameters
+  truncate : float
+    truncation point for the smoothing
+
+  Returns
+  -------
+  mu : array
+    generated 2D signal (mu) field
+
+  Examples
+  --------
+  mu = circle_2D(dim=(80,50,50), shape_spec=shape_spec, truncate=3)
+  """
+  nsubj = dim[0]
+  mag = shape_spec['mag']
+  fwhm_signal = shape_spec['fwhm_signal']
+  r = shape_spec['r']
+
+  # signal
+  x = np.linspace(-1, 1, dim[1])
+  y = np.linspace(-1, 1, dim[2])
+  xx, yy = np.meshgrid(x, y) #grid
+
+  circle = np.array(xx**2 + yy**2 <= r**2, dtype="float") * mag
+
+  # smoothing
+  sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
+  circle_smth = gaussian_filter(circle, sigma = sigma_signal, truncate=truncate)
+  mu = np.array(circle_smth, dtype='float')
+  return mu
 def step_2D(dim, shape_spec, truncate=3):
   """
   generates 2D step signal
