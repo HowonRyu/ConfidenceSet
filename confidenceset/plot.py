@@ -136,3 +136,53 @@ def get_sim_signal(shape, shape_spec, fwhm_signal_vec, fwhm_noise_vec):
   cbar_ax = fig.add_axes([0.95, 0.25, 0.015, 0.5])
   fig.colorbar(img, cax=cbar_ax, ticks=np.linspace(-1, 3, 9))
   plt.show()
+
+
+def get_sim_signal(shape, shape_spec, fwhm_signal_vec, fwhm_noise_vec):
+  """
+  produces plots of simulation signals (first row) and fields (signal + noise)
+
+  Parameters
+  ----------
+  shape : str
+    shape of the signal; choose from ramp or step. The rest is automatically ellipse.
+  shape_spec : dict
+    dictionary storing shape parameters
+  fwhm_signal_vec : list
+    fwhm values (float) for signal (columns)
+  fwhm_noise_vec : list
+    fwhm values (float) for noise (rows)
+
+  Returns
+  -------
+
+  Example
+  -------
+  shape_spec_circle = {'a':0.5, 'b':0.5, 'mag':3,
+                  'fwhm_signal': 0,
+                  'fwhm_noise': 0,
+                  'std': 1 }
+  get_sim_signal(shape="circle", shape_spec=shape_spec_circle, fwhm_signal_vec=[5, 10, 15], fwhm_noise_vec=[0,5,10])
+
+  :Authors:
+    Howon Ryu <howonryu@ucsd.edu>
+  """
+  fig, axs = plt.subplots(len(fwhm_noise_vec)+1, len(fwhm_signal_vec), figsize=(15,20))
+
+
+  for signal_idx, fwhm_signal in enumerate(fwhm_signal_vec):
+    for noise_idx, fwhm_noise in enumerate(fwhm_noise_vec):
+      ax = axs[noise_idx+1, signal_idx]
+      shape_spec['fwhm_noise'] = fwhm_noise
+      shape_spec['fwhm_signal'] = fwhm_signal
+      data_sim, mu_sim = gen_2D(dim=(1, 50, 50), shape=shape, shape_spec=shape_spec, seed=12352, truncate=3)
+      ax.set_title(f"fwhm_noise={fwhm_noise}, fwhm_signal={fwhm_signal}")
+      img=ax.imshow(data_sim[0,:,:])
+    ax = axs[0, signal_idx]
+    ax.set_title(f"mu_signal, fwhm_signal={fwhm_signal}")
+    img=ax.imshow(mu_sim)
+
+
+  cbar_ax = fig.add_axes([0.95, 0.25, 0.015, 0.5])
+  fig.colorbar(img, cax=cbar_ax, ticks=np.linspace(-1, 3, 9))
+  plt.show()
