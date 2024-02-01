@@ -59,7 +59,7 @@ def gen_2D(dim, shape, shape_spec, seed=None, truncate=3):
   dim : tuple
     dimension of the image (N, W, H)
   shape : str
-    shape of the signal; choose from ramp or step. The rest is automatically ellipse.
+    shape of the signal; choose from ramp, circle or step. The rest is automatically ellipse.
   shape_spec : dict
     dictionary storing shape parameters
   seed : int
@@ -230,6 +230,7 @@ def circle_2D(dim, shape_spec, truncate=3):
   circle_smth = gaussian_filter(circle, sigma = sigma_signal, truncate=truncate)
   mu = np.array(circle_smth, dtype='float')
   return mu
+
 def step_2D(dim, shape_spec, truncate=3):
   """
   generates 2D step signal
