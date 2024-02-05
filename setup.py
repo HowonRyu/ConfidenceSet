@@ -17,7 +17,7 @@ setup(
     author_email='howonryu@ucsd.edu',
     url='https://github.com/HowonRyu/ConfidenceSet',
     long_description=long_description,
-    description='Python toolbox functions for FDR controlled confidence sets',
+    description='Python toolbox for FDR controlled confidence sets',
     keywords='FDR, Confidence Sets',
     packages=find_packages(),
     python_requires='>=3',
