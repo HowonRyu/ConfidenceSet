@@ -160,9 +160,9 @@ def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax, alph
     separate_lower_BH = np.mean(sim_table_BH_lower, axis=1)
     # separate_avg = np.mean(tbl_separate_avg, axis=1)
 
-    methods = [joint, separate_lower_adaptive, separate_lower_BH, separate_upper_BH]
-    methods_names = ['Joint', 'Separate(lower adaptive)', 'Separate(lower BH)', 'Separate(upper BH)']
-    method_key = ['joint', 'lower_adaptive)', 'lower_BH)', 'upper_BH']
+    methods = [separate_upper_BH, separate_lower_BH, separate_lower_adaptive, joint]
+    methods_names = ['Separate(upper BH)', 'Separate(lower BH)', 'Separate(lower adaptive)', 'Joint']
+    method_key = ['upper_BH', 'lower_BH', 'lower_adaptive', 'joint']
     sim_result_single = dict(zip(method_key, methods))
     # m0/m
     # _, mu = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec)
@@ -228,7 +228,8 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
                       'fwhm_noise': 0,
                       'std': std}
     elif shape == "circle":
-        shape_spec = {'r':0.5, 'mag': 3,
+        shape_spec = {'r':0.5, 'mag': 2,
+                      'background_mag' : -1,
                       'fwhm_signal': 0,
                       'fwhm_noise': 0,
                       'std': std}
@@ -258,7 +259,7 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
             ax.set_xlabel("c")
             ax.set_ylabel(str(mode))
             if mode == "FDR":
-                ax.set_ylim([0, 0.2])
+                ax.set_ylim([0, 0.15])
             elif mode == "FNDR":
                 ax.set_ylim([0, 1.1])
             ax.legend()

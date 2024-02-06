@@ -52,8 +52,8 @@ def error_check(data, mu, mode, threshold, method, alpha=0.05):
   if method == "separate_BH":
     lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="separate_BH", alpha=alpha)
   if method == "joint":
-    lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="joint", alpha=alpha*2,
-             k=2, alpha0=(alpha*2)/4, alpha1=(alpha*2)/2)
+    lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="joint", alpha=alpha,
+             k=2, alpha0=(alpha)/4, alpha1=(alpha)/2)
 
 
   if mode == "FDR":

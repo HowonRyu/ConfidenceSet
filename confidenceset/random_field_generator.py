@@ -217,19 +217,21 @@ def circle_2D(dim, shape_spec, truncate=3):
   mag = shape_spec['mag']
   fwhm_signal = shape_spec['fwhm_signal']
   r = shape_spec['r']
+  background_mag = shape_spec['background_mag']
 
   # signal
   x = np.linspace(-1, 1, dim[1])
   y = np.linspace(-1, 1, dim[2])
   xx, yy = np.meshgrid(x, y) #grid
 
-  circle = np.array(xx**2 + yy**2 <= r**2, dtype="float") * mag
+  circle = np.array(xx**2 + yy**2 <= r**2, dtype="float") * mag + background_mag
 
   # smoothing
   sigma_signal = fwhm_signal / np.sqrt(8 * np.log(2))
   circle_smth = gaussian_filter(circle, sigma = sigma_signal, truncate=truncate)
   mu = np.array(circle_smth, dtype='float')
   return mu
+
 
 def step_2D(dim, shape_spec, truncate=3):
   """
