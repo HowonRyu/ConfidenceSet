@@ -136,3 +136,57 @@ def get_sim_signal(shape, shape_spec, fwhm_signal_vec, fwhm_noise_vec):
   cbar_ax = fig.add_axes([0.95, 0.25, 0.015, 0.5])
   fig.colorbar(img, cax=cbar_ax, ticks=np.linspace(-1, 3, 9))
   plt.show()
+
+
+def plot_confset_HCP(thresholds, background_slc, slc_info, muhat_file, sigma_file, resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
+    cmap1 = colors.ListedColormap(['none', 'blue'])
+    cmap2 = colors.ListedColormap(['none', 'yellow'])
+    cmap3 = colors.ListedColormap(['none', 'red'])
+
+    methods = ["joint", "separate_BH", "separate_adaptive", "SSS"]
+    fig, axs = plt.subplots(len(thresholds), len(methods), figsize=figsize)
+    for j, method in enumerate(methods):
+        if j == "joint":
+            alpha = 0.1
+        else:
+            alpha = 0.05
+
+        for i, c in enumerate(thresholds):
+            if method == "SSS":
+                out_dir = "/Users/howonryu/Projects/ConfidenceSet/ConfidenceSet/SSS_output"
+                upper_cr_file, lower_cr_file, estimated_ac_file, quantile_estimate = generate_CRs(muhat_file, sigma_file, resid_files, out_dir, c, 1-alpha, n_boot=n_boot)
+
+                #upper_cr_file, lower_cr_file, estimated_ac_file, quantile_estimate = generate_CRs(mean_fname=muhat_file, sig_fname=sigma_file, 
+                #res_fnames=resid_files, c=c, p=1-alpha, output=False, n_boot=n_boot)
+
+                lower_set_all = nib.load(lower_cr_file).get_fdata()[:,:,:,0]
+                upper_set_all = nib.load(upper_cr_file).get_fdata()[:,:,:,0]
+                Achat_all = nib.load(estimated_ac_file).get_fdata()[:,:,:,0]
+                if slc_info[1] == "sagittal":
+                    axis="X"
+                    lower_set = np.rot90(lower_set_all[slc_info[2],:,:], k=1)
+                    upper_set = np.rot90(upper_set_all[slc_info[2],:,:], k=1)
+                    Achat = np.rot90(Achat_all[slc_info[2],:,:], k=1)
+                if slc_info[1] == "coronal":
+                    axis="Y"
+                    lower_set = np.rot90(lower_set_all[:,slc_info[2],:], k=1)
+                    upper_set = np.rot90(upper_set_all[:,slc_info[2],:], k=1)
+                    Achat = np.rot90(Achat_all[:,slc_info[2],:], k=1)
+                if slc_info[1] == "axial":
+                    axis="Z"
+                    lower_set = np.rot90(lower_set_all[:,:,slc_info[2]], k=1)
+                    upper_set = np.rot90(upper_set_all[:,:,slc_info[2]], k=1)
+                    Achat = np.rot90(Achat_all[:,:,slc_info[2]], k=1)           
+            else:
+                lower_set, upper_set, Achat, plot_add, n_rej = fdr_confset(slc_info[0], threshold=c, method=method, alpha=alpha, k=2, alpha0=alpha / 4, alpha1=alpha / 2)
+
+            # plot
+            axs[i,j].imshow(background_slc, cmap="Greys_r")
+            axs[i,j].imshow(lower_set, cmap=cmap1)
+            axs[i,j].imshow(Achat, cmap=cmap2)
+            axs[i,j].imshow(upper_set, cmap=cmap3)
+            axs[i,j].axis('off')
+            axs[i,j].set_title(f"threshold={c/10}% ({method})")
+
+    plt.suptitle(f'{slc_info[1]} ({axis}={misc}), alpha = {alpha}', fontsize=fontsize)
+        
