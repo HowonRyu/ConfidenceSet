@@ -6,6 +6,18 @@
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
 # User-specific stuff
+
+
+data/
+sim_result/
+old_plots/
+real_data/
+sim_plots/
+SSS_output/
+Confidence_Set_FDR.pdf
+crtoolbox_demo-master/
+
+
 .idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml
