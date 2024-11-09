@@ -9,15 +9,14 @@
 
 
 data/
-sim_result/
 old_plots/
 real_data/
 sim_plots/
 SSS_output/
 Confidence_Set_FDR.pdf
 crtoolbox_demo-master/
-lower_set_all_c10.npy
-upper_set_all_c10.npy
+real_data_output/
+real_data_plots/
 
 .idea/**/workspace.xml
 .idea/**/tasks.xml

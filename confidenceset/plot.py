@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from crtoolbox.generate import generate_CRs
 import crtoolbox
-
+import nibabel as nib
 from scipy.ndimage import gaussian_filter
 import matplotlib.colors as colors
 from .test import *
@@ -145,13 +145,72 @@ def get_sim_signal(shape, shape_spec, fwhm_signal_vec, fwhm_noise_vec):
   plt.show()
 
 
-def plot_confset_HCP(thresholds, background_slc, slc_info, muhat_file, sigma_file, resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
+# Simulation result plotting
+def sim_plot_individual(sim_result_dict, figsize, fontsize, ylim_upper, legend=False, FDR=False):
+    methods_names = ['Separate(upper BH)', 'Separate(lower BH)', 'Separate(lower adaptive)', 'Joint']
+    method_key = ['upper_BH', 'lower_BH', 'lower_adaptive', 'joint']
+    x = np.linspace(-2, 2, num=21)
+    plt.figure(figsize=figsize)
+    plt.ylim(0, ylim_upper)
+    for i, method in enumerate(method_key):
+        plt.plot(x, sim_result_dict[method], label=methods_names[i])
+        if FDR:
+            plt.axhline(y=0.05, color='red', linestyle='--')
+    plt.xlabel("c", fontsize=fontsize)
+    if FDR:
+        plt.ylabel("FDR", fontsize=fontsize+2)
+    else:
+        plt.ylabel("FNDR", fontsize=fontsize+2)
+    if legend:
+        plt.legend(fontsize=fontsize-2)
+    plt.show()
+
+def sim_plot_all(sim_result_dict_all, figsize=(15,15), fontsize = 15, FDR = True, shape = None):
+    noises = [0, 5, 10]
+    signals = [5, 10, 15]
+    fig, axs = plt.subplots(len(noises), len(signals), figsize=figsize)
+
+    for r, noise in enumerate(noises):
+        for c, signal in enumerate(signals):
+            sim_key_name = f"noise{noise}signal{signal}"
+            sim_result_dict = sim_result_dict_all[sim_key_name]
+
+
+        # plotting
+            ax = axs[r, c]
+            methods_names = ['Separate(upper BH)', 'Separate(lower BH)', 'Separate(lower adaptive)', 'Joint']
+            method_key = ['upper_BH', 'lower_BH', 'lower_adaptive', 'joint']
+
+            x = np.linspace(-2, 2, num=21)
+            if FDR:
+                ax.set_ylabel("FDR", fontsize=fontsize+2)
+                ylim_upper = 0.15
+            else:
+                ax.set_ylabel("FNDR", fontsize=fontsize+2)
+                ylim_upper = 1.1
+            ax.set_ylim(0, ylim_upper)
+            for i, method in enumerate(method_key):
+                ax.plot(x, sim_result_dict[method], label=methods_names[i])
+                if FDR:
+                    ax.axhline(y=0.05, color='red', linestyle='--')
+            ax.set_xlabel("c", fontsize=fontsize)
+            ax.legend(fontsize=fontsize-2)
+            ax.set_title(f"fwhm(noise)={noise}, fwhm(signal)={signal}, shape={shape}")
+
+    plt.show()
+
+
+
+
+# Real data application plotting
+def plot_confset_HCP_3D(thresholds, slc_info, background_all, data_all, muhat_file, sigma_file, resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
     cmap1 = colors.ListedColormap(['none', 'blue'])
     cmap2 = colors.ListedColormap(['none', 'yellow'])
     cmap3 = colors.ListedColormap(['none', 'red'])
 
     methods = ["joint", "separate_BH", "separate_adaptive", "SSS"]
     fig, axs = plt.subplots(len(thresholds), len(methods), figsize=figsize)
+    
     for j, method in enumerate(methods):
         if j == "joint":
             alpha = 0.1
@@ -166,86 +225,37 @@ def plot_confset_HCP(thresholds, background_slc, slc_info, muhat_file, sigma_fil
                 lower_set_all = nib.load(lower_cr_file).get_fdata()[:,:,:,0]
                 upper_set_all = nib.load(upper_cr_file).get_fdata()[:,:,:,0]
                 Achat_all = nib.load(estimated_ac_file).get_fdata()[:,:,:,0]
-                if slc_info[1] == "sagittal":
-                    axis="X"
-                    lower_set = np.rot90(lower_set_all[slc_info[2],:,:], k=1)
-                    upper_set = np.rot90(upper_set_all[slc_info[2],:,:], k=1)
-                    Achat = np.rot90(Achat_all[slc_info[2],:,:], k=1)
-                if slc_info[1] == "coronal":
-                    axis="Y"
-                    lower_set = np.rot90(lower_set_all[:,slc_info[2],:], k=1)
-                    upper_set = np.rot90(upper_set_all[:,slc_info[2],:], k=1)
-                    Achat = np.rot90(Achat_all[:,slc_info[2],:], k=1)
-                if slc_info[1] == "axial":
-                    axis="Z"
-                    lower_set = np.rot90(lower_set_all[:,:,slc_info[2]], k=1)
-                    upper_set = np.rot90(upper_set_all[:,:,slc_info[2]], k=1)
-                    Achat = np.rot90(Achat_all[:,:,slc_info[2]], k=1)           
             else:
-                lower_set, upper_set, Achat, plot_add, n_rej = fdr_confset(slc_info[0], threshold=c, method=method, alpha=alpha, k=2, alpha0=alpha / 4, alpha1=alpha / 2)
+                lower_set_all, upper_set_all, Achat_all, plot_add, n_rej = fdr_confset(data=data_all, threshold=c, method=method, alpha=alpha, k=2, alpha0=alpha / 4, alpha1=alpha / 2)
+            
+            if slc_info[0] == "sagittal":
+                axis="X"
+                lower_set = np.rot90(lower_set_all[slc_info[1],:,:], k=1)
+                upper_set = np.rot90(upper_set_all[slc_info[1],:,:], k=1)
+                Achat = np.rot90(Achat_all[slc_info[1],:,:], k=1)
+                background = np.rot90(background_all[slc_info[1],:,:], k=1)
+            if slc_info[0] == "coronal":
+                axis="Y"
+                lower_set = np.rot90(lower_set_all[:,slc_info[1],:], k=1)
+                upper_set = np.rot90(upper_set_all[:,slc_info[1],:], k=1)
+                Achat = np.rot90(Achat_all[:,slc_info[1],:], k=1)
+                background = np.rot90(background_all[:,slc_info[1],:], k=1)
+            if slc_info[0] == "axial":
+                axis="Z"
+                lower_set = np.rot90(lower_set_all[:,:,slc_info[1]], k=1)
+                upper_set = np.rot90(upper_set_all[:,:,slc_info[1]], k=1)
+                Achat = np.rot90(Achat_all[:,:,slc_info[1]], k=1)
+                background = np.rot90(background_all[:, :,slc_info[1]], k=1)                
 
             # plot
-            axs[i,j].imshow(background_slc, cmap="Greys_r")
+            axs[i,j].imshow(background, cmap="Greys_r")
             axs[i,j].imshow(lower_set, cmap=cmap1)
             axs[i,j].imshow(Achat, cmap=cmap2)
             axs[i,j].imshow(upper_set, cmap=cmap3)
             axs[i,j].axis('off')
             axs[i,j].set_title(f"threshold={c/10}% ({method})")
 
-    plt.suptitle(f'{slc_info[1]} ({axis}={misc}), alpha = {alpha}', fontsize=fontsize)
-        
-def plot_confset_HCP_indv(thresholds, background_slc, slc_info, muhat_file, sigma_file, resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
-    """
-    slc_info = ["sagittal", sag_x_slice, sagittal]
-    """
-    cmap1 = colors.ListedColormap(['none', 'blue'])
-    cmap2 = colors.ListedColormap(['none', 'yellow'])
-    cmap3 = colors.ListedColormap(['none', 'red'])
-
-    methods = ["joint", "separate_BH", "separate_adaptive", "SSS"]
-    for j, method in enumerate(methods):
-        if j == "joint":
-            alpha = 0.1
-        else:
-            alpha = 0.05
-
-
-        for i, c in enumerate(thresholds):
-            if method == "SSS":
-                out_dir = "/Users/howonryu/Projects/ConfidenceSet/ConfidenceSet/SSS_output"
-                upper_cr_file, lower_cr_file, estimated_ac_file, quantile_estimate = generate_CRs(muhat_file, sigma_file, resid_files, out_dir, c, 1-alpha, n_boot=n_boot)
-
-                lower_set_all = nib.load(lower_cr_file).get_fdata()[:,:,:,0]
-                upper_set_all = nib.load(upper_cr_file).get_fdata()[:,:,:,0]
-                Achat_all = nib.load(estimated_ac_file).get_fdata()[:,:,:,0]
-                if slc_info[0] == "sagittal":
-                    axis="X"
-                    lower_set = np.rot90(lower_set_all[slc_info[1],:,:], k=1)
-                    upper_set = np.rot90(upper_set_all[slc_info[1],:,:], k=1)
-                    Achat = np.rot90(Achat_all[slc_info[1],:,:], k=1)
-                if slc_info[0] == "coronal":
-                    axis="Y"
-                    lower_set = np.rot90(lower_set_all[:,slc_info[1],:], k=1)
-                    upper_set = np.rot90(upper_set_all[:,slc_info[1],:], k=1)
-                    Achat = np.rot90(Achat_all[:,slc_info[1],:], k=1)
-                if slc_info[0] == "axial":
-                    axis="Z"
-                    lower_set = np.rot90(lower_set_all[:,:,slc_info[1]], k=1)
-                    upper_set = np.rot90(upper_set_all[:,:,slc_info[1]], k=1)
-                    Achat = np.rot90(Achat_all[:,:,slc_info[1]], k=1)           
-            else:
-                lower_set, upper_set, Achat, plot_add, n_rej = fdr_confset(slc_info[2], threshold=c, method=method, alpha=alpha, k=2, alpha0=alpha / 4, alpha1=alpha / 2)
-
-            # plot
-            print(f"----------{method}, c={c}---------{i+1}{j+1}")
-            plt.imshow(background_slc, cmap="Greys_r")
-            plt.imshow(lower_set, cmap=cmap1)
-            plt.imshow(Achat, cmap=cmap2)
-            plt.imshow(upper_set, cmap=cmap3)
-            plt.axis('off')
-            plt.show()
-            
-    print(f'{slc_info[1]} ({axis}={misc}), alpha = {alpha}')
+    plt.suptitle(f'{slc_info[0]} ({axis}={misc}), alpha = {alpha}', fontsize=fontsize)
 
 
 def plot_confset_HCP_3d_indv(thresholds, slc_info, background_all, data_all, SSS_muhat_file, SSS_sigma_file, SSS_resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
@@ -272,7 +282,8 @@ def plot_confset_HCP_3d_indv(thresholds, slc_info, background_all, data_all, SSS
                 upper_set_all = nib.load(upper_cr_file).get_fdata()[:,:,:,0]
                 Achat_all = nib.load(estimated_ac_file).get_fdata()[:,:,:,0]
             else:
-                lower_set_all, upper_set_all, Achat_all, plot_add, n_rej = fdr_confset(data=data_all, threshold=c, method=method, alpha=alpha, k=2, alpha0=alpha / 4, alpha1=alpha / 2)
+                lower_set_all, upper_set_all, Achat_all, plot_add, n_rej = fdr_confset(data=data_all, threshold=c, method=method,
+                                                                                       alpha=alpha, k=2, alpha0=alpha / 4, alpha1=alpha / 2)
 
             if slc_info[0] == "sagittal":
                 axis="X"
