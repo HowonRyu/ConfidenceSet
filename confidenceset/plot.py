@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from crtoolbox.generate import generate_CRs
 import crtoolbox
-
+import nibabel as nib
 from scipy.ndimage import gaussian_filter
 import matplotlib.colors as colors
 from .test import *
@@ -145,6 +145,64 @@ def get_sim_signal(shape, shape_spec, fwhm_signal_vec, fwhm_noise_vec):
   plt.show()
 
 
+# Simulation result plotting
+def sim_plot_individual(sim_result_dict, figsize, fontsize, ylim_upper, legend=False, FDR=False):
+    methods_names = ['Separate(upper BH)', 'Separate(lower BH)', 'Separate(lower adaptive)', 'Joint']
+    method_key = ['upper_BH', 'lower_BH', 'lower_adaptive', 'joint']
+    x = np.linspace(-2, 2, num=21)
+    plt.figure(figsize=figsize)
+    plt.ylim(0, ylim_upper)
+    for i, method in enumerate(method_key):
+        plt.plot(x, sim_result_dict[method], label=methods_names[i])
+        if FDR:
+            plt.axhline(y=0.05, color='red', linestyle='--')
+    plt.xlabel("c", fontsize=fontsize)
+    if FDR:
+        plt.ylabel("FDR", fontsize=fontsize+2)
+    else:
+        plt.ylabel("FNDR", fontsize=fontsize+2)
+    if legend:
+        plt.legend(fontsize=fontsize-2)
+    plt.show()
+
+def sim_plot_all(sim_result_dict_all, figsize=(15,15), fontsize = 15, FDR = True, shape = None):
+    noises = [0, 5, 10]
+    signals = [5, 10, 15]
+    fig, axs = plt.subplots(len(noises), len(signals), figsize=figsize)
+
+    for r, noise in enumerate(noises):
+        for c, signal in enumerate(signals):
+            sim_key_name = f"noise{noise}signal{signal}"
+            sim_result_dict = sim_result_dict_all[sim_key_name]
+
+
+        # plotting
+            ax = axs[r, c]
+            methods_names = ['Separate(upper BH)', 'Separate(lower BH)', 'Separate(lower adaptive)', 'Joint']
+            method_key = ['upper_BH', 'lower_BH', 'lower_adaptive', 'joint']
+
+            x = np.linspace(-2, 2, num=21)
+            if FDR:
+                ax.set_ylabel("FDR", fontsize=fontsize+2)
+                ylim_upper = 0.15
+            else:
+                ax.set_ylabel("FNDR", fontsize=fontsize+2)
+                ylim_upper = 1.1
+            ax.set_ylim(0, ylim_upper)
+            for i, method in enumerate(method_key):
+                ax.plot(x, sim_result_dict[method], label=methods_names[i])
+                if FDR:
+                    ax.axhline(y=0.05, color='red', linestyle='--')
+            ax.set_xlabel("c", fontsize=fontsize)
+            ax.legend(fontsize=fontsize-2)
+            ax.set_title(f"fwhm(noise)={noise}, fwhm(signal)={signal}, shape={shape}")
+
+    plt.show()
+
+
+
+
+# Real data application plotting
 def plot_confset_HCP(thresholds, background_slc, slc_info, muhat_file, sigma_file, resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
     cmap1 = colors.ListedColormap(['none', 'blue'])
     cmap2 = colors.ListedColormap(['none', 'yellow'])
