@@ -16,6 +16,8 @@ SSS_output/
 Confidence_Set_FDR.pdf
 crtoolbox_demo-master/
 real_data_output/
+real_data_plots/
+
 
 .idea/**/workspace.xml
 .idea/**/tasks.xml
