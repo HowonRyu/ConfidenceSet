@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from crtoolbox.generate import generate_CRs
 import crtoolbox
-import nibabel as nibimport nibabel as nib
+import nibabel as nib
 from scipy.ndimage import gaussian_filter
 import matplotlib.colors as colors
 from .test import *
@@ -203,7 +203,7 @@ def sim_plot_all(sim_result_dict_all, figsize=(15,15), fontsize = 15, FDR = True
 
 
 # Real data application plotting
-def plot_confset_HCP(thresholds, background_slc, slc_info, muhat_file, sigma_file, resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
+def plot_confset_HCP_3D(thresholds, slc_info, background_all, data_all, muhat_file, sigma_file, resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
     cmap1 = colors.ListedColormap(['none', 'blue'])
     cmap2 = colors.ListedColormap(['none', 'yellow'])
     cmap3 = colors.ListedColormap(['none', 'red'])
