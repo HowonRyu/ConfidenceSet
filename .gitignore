@@ -17,6 +17,10 @@ Confidence_Set_FDR.pdf
 crtoolbox_demo-master/
 real_data_output/
 real_data_plots/
+archive.py
+ConfidenceSet_Demonstration copy.ipynb
+ConfidenceSet_Demonstration_internal.ipynb
+sim_result/
 
 .idea/**/workspace.xml
 .idea/**/tasks.xml
