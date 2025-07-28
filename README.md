@@ -23,3 +23,6 @@ The list of dependencies can be found in the [requirements.txt](https://github.c
 ## Demonstration
 The simulation demonstration is presented in [ConfidenceRegion_Demonstration.ipynb](https://github.com/HowonRyu/ConfidenceSet/blob/main/ConfidenceRegion_Demonstration.ipynb)
 
+
+## Cite
+Ryu, H., Maullin-Sapey, T., Schwartzman, A., & Davenport, S. (2025). Spatial Confidence Regions for Excursion Sets with False Discovery Rate Control. arXiv preprint arXiv:2504.13124.
