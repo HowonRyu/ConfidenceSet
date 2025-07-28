@@ -1,13 +1,12 @@
 # Spatial Confidence Regions for Excursion Sets with False Discovery Rate Control
 Python toolbox for FDR controlled confidence regions. The manuscript can be found [here](https://arxiv.org/abs/2504.13124).
 
-- [Setting up Environment](#Setting-up-Environment)
+- [Installation](#Installation)
 - [Demonstration](#Demonstration)
 
-%![An illustration of confidence regions applied to task-based fMRI](fig1.png))
-<img src="https://github.com/HowonRyu/ConfidenceSet/blob/main/fig1.png" alt="An illustration of confidence regions applied to task-based fMRI" width="300" height="200">
+<img src="fig1.png" alt="An illustration of confidence regions applied to task-based fMRI" width="600" height="600">
 
-## Setting up Environment
+## Installation
 To use the `confidenceset` toolbox, run the following command directly to install the library.
 
 ```
