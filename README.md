@@ -4,8 +4,8 @@ Python toolbox for FDR controlled confidence regions. The manuscript can be foun
 - [Setting up Environment](#Setting-up-Environment)
 - [Demonstration](#Demonstration)
 
-![An illustration of confidence regions applied to task-based fMRI](fig1.png))
-
+%![An illustration of confidence regions applied to task-based fMRI](fig1.png))
+<img src="https://github.com/HowonRyu/ConfidenceSet/blob/main/fig1.png" alt="An illustration of confidence regions applied to task-based fMRI" width="300" height="200">
 
 ## Setting up Environment
 To use the `confidenceset` toolbox, run the following command directly to install the library.
