@@ -21,5 +21,5 @@ The list of dependencies can be found in the [requirements.txt](https://github.c
 
 
 ## Demonstration
-For simulation demonstration for signals is presented in [ConfidenceRegion_Demonstration.ipynb](https://github.com/HowonRyu/ConfidenceSet/blob/main/ConfidenceRegion_Demonstration.ipynb)
+The simulation demonstration is presented in [ConfidenceRegion_Demonstration.ipynb](https://github.com/HowonRyu/ConfidenceSet/blob/main/ConfidenceRegion_Demonstration.ipynb)
 
