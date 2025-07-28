@@ -10,7 +10,7 @@ Python toolbox for FDR controlled confidence regions. The manuscript can be foun
 To use the `confidenceset` toolbox, run the following command directly to install the library.
 
 ```
-pip install git+https://github.com/username/repository_name.git
+pip install git+https://github.com/HowonRyu/ConfidenceSet.git
 ```
 Alternatively, You can set up the environment by installing the required dependencies:
 ```
