@@ -12,7 +12,7 @@ To use the `confidenceset` toolbox, run the following command directly to instal
 ```
 pip install git+https://github.com/HowonRyu/ConfidenceSet.git
 ```
-Alternatively, You can set up the environment by installing the required dependencies:
+Alternatively, you can set up the environment by installing the required dependencies:
 ```
 pip install -r requirements.txt
 ```
