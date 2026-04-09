@@ -145,6 +145,8 @@ def get_sim_signal(shape, shape_spec, fwhm_signal_vec, fwhm_noise_vec):
   plt.show()
 
 
+
+
 # Simulation result plotting
 def sim_plot_individual(sim_result_dict, figsize, fontsize, ylim_upper, legend=False, FDR=False):
     methods_names = ['Separate(upper BH)', 'Separate(lower BH)', 'Separate(lower adaptive)', 'Joint']
@@ -164,6 +166,8 @@ def sim_plot_individual(sim_result_dict, figsize, fontsize, ylim_upper, legend=F
     if legend:
         plt.legend(fontsize=fontsize-2)
     plt.show()
+
+
 
 def sim_plot_all(sim_result_dict_all, figsize=(15,15), fontsize = 15, FDR = True, shape = None):
     noises = [0, 5, 10]
@@ -202,115 +206,3 @@ def sim_plot_all(sim_result_dict_all, figsize=(15,15), fontsize = 15, FDR = True
 
 
 
-# Real data application plotting
-def plot_confset_HCP_3D(thresholds, slc_info, background_all, data_all, muhat_file, sigma_file, resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
-    cmap1 = colors.ListedColormap(['none', 'blue'])
-    cmap2 = colors.ListedColormap(['none', 'yellow'])
-    cmap3 = colors.ListedColormap(['none', 'red'])
-
-    methods = ["joint", "separate_BH", "separate_adaptive", "SSS"]
-    fig, axs = plt.subplots(len(thresholds), len(methods), figsize=figsize)
-    
-    for j, method in enumerate(methods):
-        if j == "joint":
-            alpha = 0.1
-        else:
-            alpha = 0.05
-
-        for i, c in enumerate(thresholds):
-            if method == "SSS":
-                out_dir = "/Users/howonryu/Projects/ConfidenceSet/ConfidenceSet/SSS_output"
-                upper_cr_file, lower_cr_file, estimated_ac_file, quantile_estimate = generate_CRs(muhat_file, sigma_file, resid_files, out_dir, c, 1-alpha, n_boot=n_boot)
-
-                lower_set_all = nib.load(lower_cr_file).get_fdata()[:,:,:,0]
-                upper_set_all = nib.load(upper_cr_file).get_fdata()[:,:,:,0]
-                Achat_all = nib.load(estimated_ac_file).get_fdata()[:,:,:,0]
-            else:
-                lower_set_all, upper_set_all, Achat_all, plot_add, n_rej = fdr_confset(data=data_all, threshold=c, method=method, alpha=alpha, k=2, alpha0=alpha / 4, alpha1=alpha / 2)
-            
-            if slc_info[0] == "sagittal":
-                axis="X"
-                lower_set = np.rot90(lower_set_all[slc_info[1],:,:], k=1)
-                upper_set = np.rot90(upper_set_all[slc_info[1],:,:], k=1)
-                Achat = np.rot90(Achat_all[slc_info[1],:,:], k=1)
-                background = np.rot90(background_all[slc_info[1],:,:], k=1)
-            if slc_info[0] == "coronal":
-                axis="Y"
-                lower_set = np.rot90(lower_set_all[:,slc_info[1],:], k=1)
-                upper_set = np.rot90(upper_set_all[:,slc_info[1],:], k=1)
-                Achat = np.rot90(Achat_all[:,slc_info[1],:], k=1)
-                background = np.rot90(background_all[:,slc_info[1],:], k=1)
-            if slc_info[0] == "axial":
-                axis="Z"
-                lower_set = np.rot90(lower_set_all[:,:,slc_info[1]], k=1)
-                upper_set = np.rot90(upper_set_all[:,:,slc_info[1]], k=1)
-                Achat = np.rot90(Achat_all[:,:,slc_info[1]], k=1)
-                background = np.rot90(background_all[:, :,slc_info[1]], k=1)                
-
-            # plot
-            axs[i,j].imshow(background, cmap="Greys_r")
-            axs[i,j].imshow(lower_set, cmap=cmap1)
-            axs[i,j].imshow(Achat, cmap=cmap2)
-            axs[i,j].imshow(upper_set, cmap=cmap3)
-            axs[i,j].axis('off')
-            axs[i,j].set_title(f"threshold={c/10}% ({method})")
-
-    plt.suptitle(f'{slc_info[0]} ({axis}={misc}), alpha = {alpha}', fontsize=fontsize)
-
-
-def plot_confset_HCP_3d_indv(thresholds, slc_info, background_all, data_all, SSS_muhat_file, SSS_sigma_file, SSS_resid_files, alpha, n_boot, misc, fontsize=15, figsize=[15,20]):
-    """
-    slc_info = ["sagittal", sag_x_slice]
-    """
-    cmap1 = colors.ListedColormap(['none', 'blue'])
-    cmap2 = colors.ListedColormap(['none', 'yellow'])
-    cmap3 = colors.ListedColormap(['none', 'red'])
-
-    methods = ["joint", "separate_BH", "separate_adaptive", "SSS"]
-    for j, method in enumerate(methods):
-        if j == "joint":
-            alpha = 0.1
-        else:
-            alpha = 0.05
-
-        for i, c in enumerate(thresholds):
-            if method == "SSS":
-                out_dir = "/Users/howonryu/Projects/ConfidenceSet/ConfidenceSet/SSS_output"
-                upper_cr_file, lower_cr_file, estimated_ac_file, quantile_estimate = generate_CRs(SSS_muhat_file, SSS_sigma_file, SSS_resid_files, out_dir, c, 1-alpha, n_boot=n_boot)
-
-                lower_set_all = nib.load(lower_cr_file).get_fdata()[:,:,:,0]
-                upper_set_all = nib.load(upper_cr_file).get_fdata()[:,:,:,0]
-                Achat_all = nib.load(estimated_ac_file).get_fdata()[:,:,:,0]
-            else:
-                lower_set_all, upper_set_all, Achat_all, plot_add, n_rej = fdr_confset(data=data_all, threshold=c, method=method,
-                                                                                       alpha=alpha, k=2, alpha0=alpha / 4, alpha1=alpha / 2)
-
-            if slc_info[0] == "sagittal":
-                axis="X"
-                lower_set = np.rot90(lower_set_all[slc_info[1],:,:], k=1)
-                upper_set = np.rot90(upper_set_all[slc_info[1],:,:], k=1)
-                Achat = np.rot90(Achat_all[slc_info[1],:,:], k=1)
-                background = np.rot90(background_all[slc_info[1],:,:], k=1)
-            if slc_info[0] == "coronal":
-                axis="Y"
-                lower_set = np.rot90(lower_set_all[:,slc_info[1],:], k=1)
-                upper_set = np.rot90(upper_set_all[:,slc_info[1],:], k=1)
-                Achat = np.rot90(Achat_all[:,slc_info[1],:], k=1)
-                background = np.rot90(background_all[:,slc_info[1],:], k=1)
-            if slc_info[0] == "axial":
-                axis="Z"
-                lower_set = np.rot90(lower_set_all[:,:,slc_info[1]], k=1)
-                upper_set = np.rot90(upper_set_all[:,:,slc_info[1]], k=1)
-                Achat = np.rot90(Achat_all[:,:,slc_info[1]], k=1)
-                background = np.rot90(background_all[:, :,slc_info[1]], k=1)           
-
-
-            # plot
-            print(f"----------{method}, c={c}---------{i+1}{j+1}")
-            plt.imshow(background, cmap="Greys_r")
-            plt.imshow(lower_set, cmap=cmap1)
-            plt.imshow(Achat, cmap=cmap2)
-            plt.imshow(upper_set, cmap=cmap3)
-            plt.axis('off')
-            plt.show()
-    print(f'{slc_info[1]} ({axis}={misc}), alpha = {alpha}')

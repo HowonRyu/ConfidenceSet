@@ -12,13 +12,13 @@ To use the `confidenceset` toolbox, run the following command directly to instal
 ```
 pip install git+https://github.com/HowonRyu/ConfidenceSet.git
 ```
-Alternatively, You can set up the environment by installing the required dependencies:
-```
-pip install -r requirements.txt
-```
-The list of dependencies can be found in the [requirements.txt](https://github.com/HowonRyu/ConfidenceSet/blob/main/requirements.txt) file.
 
-
+Alternatively, clone the repository and install locally:
+```
+git clone https://github.com/HowonRyu/ConfidenceSet.git
+cd ConfidenceSet
+pip install -e 
+```
 
 ## Demonstration
 The simulation demonstration is presented in [ConfidenceRegion_Demonstration.ipynb](https://github.com/HowonRyu/ConfidenceSet/blob/main/ConfidenceRegion_Demonstration.ipynb)

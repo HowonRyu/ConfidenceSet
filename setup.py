@@ -8,7 +8,9 @@ setup(
     install_requires=[
         'numpy',
         'scipy',
-        'matplotlib'
+        'matplotlib',
+        'pandas'
+        'pickle'
     ],
     version = '0.0.2',
     license='MIT',
