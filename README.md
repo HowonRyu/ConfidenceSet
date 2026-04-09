@@ -17,7 +17,7 @@ Alternatively, clone the repository and install locally:
 ```
 git clone https://github.com/HowonRyu/ConfidenceSet.git
 cd ConfidenceSet
-pip install -e 
+pip install -e .
 ```
 
 ## Demonstration
