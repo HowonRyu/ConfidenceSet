@@ -39,14 +39,12 @@ def error_check(data, mu, mode, threshold, method, alpha=0.05):
     Howon Ryu <howonryu@ucsd.edu>
   """
 
-  #### new def for test sim ####
-  Ac = mu >= threshold
+  Ac = mu > threshold
   AcC = 1 - Ac
-  Acbar = mu > threshold
+  Acbar = mu >= threshold
   AcbarC = 1-Acbar
   dim = data.shape
   m = dim[1] * dim[2]
-  #### new def for test sim ####
 
   if method == "separate_adaptive":
     lower, upper, Achat, all_sets, n_rej = fdr_confset(data=data, threshold=threshold, method="separate_adaptive", alpha=alpha,

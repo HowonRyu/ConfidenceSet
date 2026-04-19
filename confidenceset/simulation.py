@@ -5,7 +5,7 @@ from .test import *
 
 ## threshold simulation
 def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
-                        alpha=0.05, sanity_check=False):
+                        alpha=0.05, sanity_check=False, seed=None):
     """
     produces table for FDR, and FNDR simulation result per threshold change
 
@@ -48,19 +48,22 @@ def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
     sim_table_joint = np.empty([len(c), sim_num])
 
 
-    for thres_idx, thres in enumerate(c):
+    
+    for i in np.arange(sim_num):
+      if i % 100 == 0:
+        print(f"[sim_table_threshold] simulation {i+1}/{sim_num}")
       temp_sim_table_adaptive_lower = list()
       temp_sim_table_BH_lower = list()
       temp_sim_table_BH_upper = list()
       temp_sim_table_joint = list()
-      for i in np.arange(sim_num):
 
-        if sanity_check:
-          data = np.random.randn(*dim)
-          mu = np.zeros(dim[1], dim[2])
-        else:
-          data, mu = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec)
+      if sanity_check:
+        data = np.random.randn(*dim)
+        mu = np.zeros((dim[1], dim[2]))
+      else:
+        data, mu = gen_2D(dim=dim, shape=shape, shape_spec=shape_spec, seed=seed + i if seed is not None else None)
 
+      for thres_idx, thres in enumerate(c):
         separate_adaptive_error_check = error_check(mode=mode, data=data, mu=mu, threshold=thres,
                                           method="separate_adaptive",  alpha=alpha)
         separate_BH_error_check = error_check(mode=mode, data=data, mu=mu, threshold=thres,
@@ -73,15 +76,15 @@ def sim_table_threshold(sim_num, mode, dim, shape, shape_spec, c,
         temp_sim_table_BH_upper.append(separate_BH_error_check[1])
         temp_sim_table_joint.append(joint_error_check)
 
-      sim_table_adaptive_lower[thres_idx, :] = temp_sim_table_adaptive_lower
-      sim_table_BH_lower[thres_idx, :] = temp_sim_table_BH_lower
-      sim_table_BH_upper[thres_idx, :] = temp_sim_table_BH_upper
-      sim_table_joint[thres_idx, :] = temp_sim_table_joint
+      sim_table_adaptive_lower[:, i] = temp_sim_table_adaptive_lower
+      sim_table_BH_lower[:, i] = temp_sim_table_BH_lower
+      sim_table_BH_upper[:, i] = temp_sim_table_BH_upper
+      sim_table_joint[:, i] = temp_sim_table_joint
 
     return sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint
 
 
-def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax, alpha=0.05):
+def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax, alpha=0.05, seed=None):
     """
     plots error rate simulation for one setting (use within sim_threshold)
 
@@ -146,7 +149,7 @@ def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax, alph
       Howon Ryu <howonryu@ucsd.edu>
     """
     sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint = sim_table_threshold(
-        sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_spec, c=c, dim=dim, alpha=alpha)
+        sim_num=sim_num, mode=mode, shape=shape, shape_spec=shape_spec, c=c, dim=dim, alpha=alpha, seed=seed)
 
     sim_std_stacked = np.stack([sim_table_adaptive_lower, sim_table_BH_lower, sim_table_BH_upper, sim_table_joint],
                                axis=0)
@@ -179,7 +182,7 @@ def sim_plot_single_threshold(sim_num, dim, mode, shape, shape_spec, c, ax, alph
 
 
 def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
-                   alpha=0.05, figsize=(15, 10)):
+                   alpha=0.05, figsize=(15, 10), seed=None):
     """
     combines error_check_plot_single to create a grid of simulations plots with different simulation settings
 
@@ -203,6 +206,8 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
       [0, 1] alpha level
     figsize : tuple
       figure size
+    seed : int, optional
+      random seed for reproducibility
 
     Returns
     -------
@@ -242,12 +247,13 @@ def sim_threshold(sim_num, c, mode, shape, fwhm_signal_vec, fwhm_noise_vec, std,
 
     for i, fwhm_noise in enumerate(fwhm_noise_vec):
         for j, fwhm_signal in enumerate(fwhm_signal_vec):
+            print(f"[sim_threshold] i={i+1}/{len(fwhm_noise_vec)}, j={j+1}/{len(fwhm_signal_vec)}, fwhm_noise={fwhm_noise}, fwhm_signal={fwhm_signal}")
             ax = axs[i, j]
             shape_spec['fwhm_noise'] = fwhm_noise
             shape_spec['fwhm_signal'] = fwhm_signal
             sim_result_single, sim_error = sim_plot_single_threshold(sim_num=sim_num, mode=mode, shape=shape,
                                                                      shape_spec=shape_spec, c=c,
-                                                                     dim=dim_50, ax=ax, alpha=alpha)
+                                                                     dim=dim_50, ax=ax, alpha=alpha, seed=seed)
 
             # sim_result per plot
             key_name = "noise" + str(fwhm_noise) + "signal" + str(fwhm_signal)

@@ -251,7 +251,7 @@ def fdr_confset(data, threshold, method="separate_adaptive", alpha=0.05,
     data_tstat = mvtstat(data - threshold)
     data_dim = data.shape
     nsubj = data_dim[0]
-    Achat = data_tstat >= 0
+    Achat = data_tstat > 0
     # Achat_C = data_tstat <= 0
     # Acbarhat = data_tstat >= 0
     # Acbarhat_C = data_tstat < 0

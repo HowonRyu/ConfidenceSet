@@ -22,5 +22,5 @@ setup(
     description='Python toolbox for FDR controlled confidence sets',
     keywords='FDR, Confidence Sets',
     packages=find_packages(),
-    python_requires='>=3',
+    python_requires='>=3.10',
 )
